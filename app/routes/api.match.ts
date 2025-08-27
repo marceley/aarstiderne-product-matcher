@@ -10,11 +10,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const body = await request.json();
   const ingredients = (body?.ingredients ?? []) as string[];
+  const instructions = body?.instructions as string | undefined;
   if (!Array.isArray(ingredients) || ingredients.length === 0) {
     return new Response("Bad Request", { status: 400 });
   }
 
-  const embeddings = await getEmbeddings(ingredients);
+  const embeddings = await getEmbeddings(ingredients, instructions);
   const client = await pool.connect();
   try {
     const results: { ingredient: string; matches: { id: string; title: string | null; score: number }[] }[] = [];
@@ -30,7 +31,7 @@ export async function action({ request }: ActionFunctionArgs) {
         FROM products
         WHERE embedding IS NOT NULL
         ORDER BY embedding <-> ${embLiteral}::vector
-        LIMIT 5;
+        LIMIT 3;
       `;
       const matches = rows.rows.map((r: any) => ({ 
         id: (r.pimid as string) || r.id_text, 
@@ -40,7 +41,14 @@ export async function action({ request }: ActionFunctionArgs) {
       results.push({ ingredient: ingredients[i], matches });
     }
 
-    const simplified = results.map((r) => ({ ingredient: r.ingredient, matches: r.matches.map((m) => ({ id: m.id, title: m.title })) }));
+    const simplified = results.map((r) => ({ 
+      ingredient: r.ingredient, 
+      matches: r.matches.map((m) => ({ 
+        id: m.id, 
+        title: m.title,
+        score: m.score 
+      })) 
+    }));
     return Response.json({ results: simplified });
   } finally {
     client.release();

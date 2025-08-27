@@ -3,17 +3,26 @@ import { createOpenAI } from "@ai-sdk/openai";
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export async function getEmbeddings(texts: string[]): Promise<number[][]> {
+export async function getEmbeddings(texts: string[], instructions?: string): Promise<number[][]> {
   if (texts.length === 0) return [];
 
+  // Default instruction that's always applied
+  const defaultInstruction = "Vælg kun ét produkt pr ingrediens. Prioriter match på titel og ikke description felterne. Find økologiske, bæredygtige og højkvalitets danske fødevareprodukter der matcher denne ingrediens. Foretræk lokale og sæsonprodukter når tilgængelige.";
+  
   // Prepare inputs: embed only non-empty strings to satisfy API validation
   const normalized = texts.map((t) => (t ?? "").toString().trim());
   const indicesToEmbed: number[] = [];
   const valuesToEmbed: string[] = [];
+  
   for (let i = 0; i < normalized.length; i++) {
     if (normalized[i].length > 0) {
       indicesToEmbed.push(i);
-      valuesToEmbed.push(normalized[i]);
+      // Combine default instruction with optional custom instructions
+      const allInstructions = instructions 
+        ? `${defaultInstruction}\n\nAdditional instructions: ${instructions}`
+        : defaultInstruction;
+      const textWithContext = `${allInstructions}\n\nIngredient: ${normalized[i]}`;
+      valuesToEmbed.push(textWithContext);
     }
   }
 
