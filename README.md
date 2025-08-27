@@ -42,6 +42,14 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match \
   -d '{"ingredients":["tomato","basil"]}'
 ```
 
+### Utilities
+
+- Count rows in `products` (uses `.env.local`):
+
+```bash
+bash -lc 'set -a; source .env.local; set +a; node scripts/check-db.mjs'
+```
+
 ### Notes
 - Table `products(id_text text primary key, title text, raw jsonb, embedding vector(1536))`.
 - Vector search uses cosine similarity via `<->` and `<=>` operators.
