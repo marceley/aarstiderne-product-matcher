@@ -5,7 +5,7 @@ export async function loader(_args: LoaderFunctionArgs) {
   const client = await pool.connect();
   try {
     const rows = await client.sql<any>`
-      SELECT id_text, title, (embedding IS NOT NULL) AS has_embedding
+      SELECT id_text, title, raw->>'Title' as product_title, (embedding IS NOT NULL) AS has_embedding
       FROM products
       ORDER BY id_text
       LIMIT 100;
@@ -28,7 +28,8 @@ export default function Products() {
         <thead>
           <tr>
             <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>ID</th>
-            <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>Title</th>
+            <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>Title (DB)</th>
+            <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>Title (JSON)</th>
             <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>Has Embedding</th>
           </tr>
         </thead>
@@ -37,6 +38,7 @@ export default function Products() {
             <tr key={p.id_text}>
               <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.id_text}</td>
               <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.title ?? ""}</td>
+              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.product_title ?? ""}</td>
               <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.has_embedding ? "yes" : "no"}</td>
             </tr>
           ))}
