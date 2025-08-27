@@ -14,8 +14,10 @@ Tiny app with two endpoints:
 ### Setup
 1) Create a Postgres DB (Neon) and enable `pgvector` extension.
 2) Copy `.env.example` to `.env` and set:
-   - `DATABASE_URL`
    - `OPENAI_API_KEY`
+   - Postgres (one of):
+     - `DATABASE_URL`
+     - or individual vars: `DATABASE_HOST`, `DATABASE_PORT` (default 5432), `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`
 3) Run locally:
    - `npm run dev`
 4) Deploy on Vercel and set same env vars. Vercel cron is configured in `vercel.json`.

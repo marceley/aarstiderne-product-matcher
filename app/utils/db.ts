@@ -1,6 +1,23 @@
 import { createPool } from "@vercel/postgres";
 
-export const pool = createPool({ connectionString: process.env.DATABASE_URL });
+function resolveDatabaseUrl(): string | undefined {
+  if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0) {
+    return process.env.DATABASE_URL;
+  }
+  const host = process.env.DATABASE_HOST;
+  const port = process.env.DATABASE_PORT || "5432";
+  const user = process.env.DATABASE_USER;
+  const password = process.env.DATABASE_PASSWORD;
+  const dbName = process.env.DATABASE_NAME;
+  if (host && user && password && dbName) {
+    return `postgres://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${dbName}`;
+  }
+  return undefined;
+}
+
+const connectionString = resolveDatabaseUrl();
+
+export const pool = createPool({ connectionString });
 
 export async function ensureDatabaseSetup(): Promise<void> {
   const client = await pool.connect();
