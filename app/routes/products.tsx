@@ -1,29 +1,62 @@
-import type { LoaderFunctionArgs } from "react-router";
-import { pool } from "../utils/db";
+import { useEffect, useState } from "react";
 
-export async function loader(_args: LoaderFunctionArgs) {
-  const client = await pool.connect();
-  try {
-    const rows = await client.sql<any>`
-      SELECT id_text, title, raw->>'Title' as product_title, (embedding IS NOT NULL) AS has_embedding
-      FROM products
-      ORDER BY id_text
-      LIMIT 100;
-    `;
-    return Response.json({ products: rows.rows });
-  } finally {
-    client.release();
-  }
-}
+type Product = {
+  id_text: string;
+  title: string | null;
+  product_title: string | null;
+  has_embedding: boolean;
+};
 
 export default function Products() {
-  const data = (typeof window !== "undefined" && (window as any).__remixContext?.data) || undefined;
-  // Fallback for server render via useLoaderData pattern at runtime
-  // but keep a minimal client-friendly render without importing hooks here.
-  const products = (data?.products as any[]) || [];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const response = await fetch('/api/products');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.success) {
+          setProducts(data.products);
+        } else {
+          setError(data.error || 'Failed to load products');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 16 }}>
+        <h1>Products</h1>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: 16 }}>
+        <h1>Products</h1>
+        <p style={{ color: 'red' }}>Error: {error}</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: 16 }}>
-      <h1>Products (first 100)</h1>
+      <h1>Products (first 10)</h1>
+      <p>Total products: {products.length}</p>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
