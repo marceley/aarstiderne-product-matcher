@@ -32,7 +32,11 @@ function resolveDatabaseUrl(): string | undefined {
 
 const connectionString = resolveDatabaseUrl();
 
-export const pool = createPool({ connectionString });
+// Only pass connectionString when we have one. Falling back to createPool()
+// without args lets the library resolve POSTGRES_URL if provided by the env.
+export const pool = connectionString
+  ? createPool({ connectionString })
+  : createPool();
 
 export async function ensureDatabaseSetup(): Promise<void> {
   const client = await pool.connect();
