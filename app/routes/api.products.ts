@@ -6,7 +6,7 @@ export async function loader(_args: LoaderFunctionArgs) {
     const client = await pool.connect();
     try {
       const rows = await client.sql<any>`
-        SELECT id_text, title, raw->>'Title' as product_title, (embedding IS NOT NULL) AS has_embedding
+        SELECT id_text, title, pimid, raw->>'Title' as product_title, (embedding IS NOT NULL) AS has_embedding
         FROM products
         ORDER BY id_text
         LIMIT 10;

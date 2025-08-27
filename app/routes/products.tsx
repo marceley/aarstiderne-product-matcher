@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 type Product = {
   id_text: string;
   title: string | null;
+  pimid: string | null;
   product_title: string | null;
   has_embedding: boolean;
 };
@@ -61,6 +62,7 @@ export default function Products() {
         <thead>
           <tr>
             <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>ID</th>
+            <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>PIM ID</th>
             <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>Title (DB)</th>
             <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>Title (JSON)</th>
             <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>Has Embedding</th>
@@ -70,6 +72,7 @@ export default function Products() {
           {products.map((p) => (
             <tr key={p.id_text}>
               <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.id_text}</td>
+              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.pimid ?? ""}</td>
               <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.title ?? ""}</td>
               <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.product_title ?? ""}</td>
               <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{p.has_embedding ? "yes" : "no"}</td>

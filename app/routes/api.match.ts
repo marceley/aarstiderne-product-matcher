@@ -26,13 +26,17 @@ export async function action({ request }: ActionFunctionArgs) {
       }
       const embLiteral = `[${emb.join(",")}]`;
       const rows = await client.sql<any>`
-        SELECT id_text, title, 1 - (embedding <=> ${embLiteral}::vector) AS score
+        SELECT id_text, title, pimid, 1 - (embedding <=> ${embLiteral}::vector) AS score
         FROM products
         WHERE embedding IS NOT NULL
         ORDER BY embedding <-> ${embLiteral}::vector
         LIMIT 5;
       `;
-      const matches = rows.rows.map((r: any) => ({ id: r.id_text as string, title: (r.title as string) ?? null, score: Number(r.score) }))
+      const matches = rows.rows.map((r: any) => ({ 
+        id: (r.pimid as string) || r.id_text, 
+        title: (r.title as string) ?? null, 
+        score: Number(r.score) 
+      }))
       results.push({ ingredient: ingredients[i], matches });
     }
 

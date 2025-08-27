@@ -90,11 +90,19 @@ async function runScrape(): Promise<Response> {
         const embedding = embeddings[j] ?? null;
         const embeddingLiteral = embedding && embedding.length > 0 ? `[${embedding.join(",")}]` : null;
         
+        // Extract PIM ID from image URL
+        const imageUrl = batch[j]?.Image || "";
+        let pimId = null;
+        if (imageUrl) {
+          const match = imageUrl.match(/product\/[^-]+-(\d+)-\d+-\d+-\d+\.png/);
+          pimId = match ? match[1] : null;
+        }
+        
         await client.sql`
-          INSERT INTO products (id_text, title, raw, embedding)
-          VALUES (${id}, ${title}, ${JSON.stringify(batch[j])}, ${embeddingLiteral}::vector)
+          INSERT INTO products (id_text, title, pimid, raw, embedding)
+          VALUES (${id}, ${title}, ${pimId}, ${JSON.stringify(batch[j])}, ${embeddingLiteral}::vector)
           ON CONFLICT (id_text)
-          DO UPDATE SET title = EXCLUDED.title, raw = EXCLUDED.raw, embedding = EXCLUDED.embedding;
+          DO UPDATE SET title = EXCLUDED.title, pimid = EXCLUDED.pimid, raw = EXCLUDED.raw, embedding = EXCLUDED.embedding;
         `;
       }
       
