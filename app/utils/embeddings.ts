@@ -11,5 +11,3 @@ export async function getEmbeddings(texts: string[]): Promise<number[][]> {
   });
   return embeddings.map((e) => e as unknown as number[]);
 }
-
-EOF
