@@ -11,30 +11,96 @@ async function runScrape(): Promise<Response> {
 
   const res = await fetch(url, { headers: { Authorization: auth } });
   if (!res.ok) return new Response("Fetch failed", { status: 502 });
-  const data = (await res.json()) as unknown[];
+  
+  // Stream the JSON response
+  const reader = res.body?.getReader();
+  if (!reader) return new Response("No response body", { status: 500 });
+  
+  let buffer = '';
+  const products: any[] = [];
+  
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      buffer += new TextDecoder().decode(value);
+      
+      // Try to parse complete JSON objects
+      let braceCount = 0;
+      let startIndex = -1;
+      
+      for (let i = 0; i < buffer.length; i++) {
+        if (buffer[i] === '{') {
+          if (braceCount === 0) startIndex = i;
+          braceCount++;
+        } else if (buffer[i] === '}') {
+          braceCount--;
+          if (braceCount === 0 && startIndex !== -1) {
+            try {
+              const jsonStr = buffer.slice(startIndex, i + 1);
+              const product = JSON.parse(jsonStr);
+              if (product.Id && product.Title) {
+                products.push(product);
+              }
+            } catch (e) {
+              // Skip malformed JSON
+            }
+            startIndex = -1;
+          }
+        }
+      }
+      
+      // Keep only unprocessed part of buffer
+      if (startIndex !== -1) {
+        buffer = buffer.slice(startIndex);
+      } else {
+        buffer = '';
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 
-  // Expect array of products; compute embeddings from title
-  const titles: string[] = data.map((d: any) => d?.Title || "");
-  const ids: string[] = data.map((d: any) => String(d?.Id || ""));
+  console.log(`Processed ${products.length} products`);
 
-  const embeddings = await getEmbeddings(titles);
-
+  // Process in batches of 100
+  const batchSize = 100;
   const client = await pool.connect();
+  
   try {
     await client.sql`BEGIN`;
-    for (let i = 0; i < data.length; i++) {
-      const id = ids[i];
-      if (!id) continue; // Skip products without an ID
-      const title = titles[i] || null;
-      const embedding = embeddings[i] ?? null;
-      const embeddingLiteral = embedding && embedding.length > 0 ? `[${embedding.join(",")}]` : null;
-      await client.sql`
-        INSERT INTO products (id_text, title, raw, embedding)
-        VALUES (${id}, ${title}, ${JSON.stringify(data[i])}, ${embeddingLiteral}::vector)
-        ON CONFLICT (id_text)
-        DO UPDATE SET title = EXCLUDED.title, raw = EXCLUDED.raw, embedding = EXCLUDED.embedding;
-      `;
+    
+    for (let i = 0; i < products.length; i += batchSize) {
+      const batch = products.slice(i, i + batchSize);
+      
+      // Extract titles and IDs for this batch
+      const titles: string[] = batch.map((d: any) => d?.Title || "");
+      const ids: string[] = batch.map((d: any) => String(d?.Id || ""));
+      
+      // Get embeddings for this batch
+      const embeddings = await getEmbeddings(titles);
+      
+      // Insert batch
+      for (let j = 0; j < batch.length; j++) {
+        const id = ids[j];
+        if (!id) continue;
+        
+        const title = titles[j] || null;
+        const embedding = embeddings[j] ?? null;
+        const embeddingLiteral = embedding && embedding.length > 0 ? `[${embedding.join(",")}]` : null;
+        
+        await client.sql`
+          INSERT INTO products (id_text, title, raw, embedding)
+          VALUES (${id}, ${title}, ${JSON.stringify(batch[j])}, ${embeddingLiteral}::vector)
+          ON CONFLICT (id_text)
+          DO UPDATE SET title = EXCLUDED.title, raw = EXCLUDED.raw, embedding = EXCLUDED.embedding;
+        `;
+      }
+      
+      console.log(`Processed batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(products.length / batchSize)}`);
     }
+    
     await client.sql`COMMIT`;
   } catch (e) {
     await client.sql`ROLLBACK`;
@@ -44,7 +110,7 @@ async function runScrape(): Promise<Response> {
     client.release();
   }
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, count: products.length });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
