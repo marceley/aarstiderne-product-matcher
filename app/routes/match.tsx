@@ -6,6 +6,7 @@ type MatchResult = {
   matches: {
     id: string;
     title: string;
+    score: number;
   }[];
 };
 
@@ -27,7 +28,6 @@ export default function Match() {
     const formData = new FormData(e.target as HTMLFormElement);
     const ingredients = formData.get('ingredients') as string;
     const instructions = formData.get('instructions') as string;
-    console.log(ingredients);
     const response = await fetch('/api/match', {
       method: 'POST',
       body: JSON.stringify({ 
@@ -39,7 +39,6 @@ export default function Match() {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    console.log(data);
     setMatches(data);
     setLoading(false);
   };
@@ -70,10 +69,10 @@ export default function Match() {
         <div>
           {matches?.results.map((match) => (
             <div key={match.ingredient} className="mb-8">
-              <h2 className="font-bold">{match.ingredient}</h2>
+              <h2 className="font-bold text-lg">{match.ingredient}</h2>
               <ul className="m-0 p-0">
                 {match.matches.map((m) => (
-                  <li key={m.id}>{m.title} ({m.id})</li>
+                  <li key={m.id}>{m.title} ({m.id}) ({m.score})</li>
                 ))}
               </ul>
             </div>
@@ -88,7 +87,7 @@ export default function Match() {
             name="ingredients" 
             placeholder="Enter ingredients, one per line" 
             className="w-full h-32 p-2 border border-gray-300 rounded-md" 
-            defaultValue={["tomat", "agurk", "kombiucha"].join("\n")}
+            defaultValue={["tomat", "agurk", "kombucha"].join("\n")}
           />
         </div>
         <div>

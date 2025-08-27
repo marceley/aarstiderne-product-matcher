@@ -90,11 +90,11 @@ async function runScrape(): Promise<Response> {
         const embedding = embeddings[j] ?? null;
         const embeddingLiteral = embedding && embedding.length > 0 ? `[${embedding.join(",")}]` : null;
         
-        // Extract PIM ID from image URL
+        // Extract PIM ID from image URL (updated regex to handle product names with hyphens)
         const imageUrl = batch[j]?.Image || "";
         let pimId = null;
         if (imageUrl) {
-          const match = imageUrl.match(/product\/[^-]+-(\d+)-\d+-\d+-\d+\.png/);
+          const match = imageUrl.match(/product\/.*?-(\d{4})-\d+-\d+-\d+\.png/);
           pimId = match ? match[1] : null;
         }
         
