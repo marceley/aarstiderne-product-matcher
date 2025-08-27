@@ -1,4 +1,4 @@
-## Product Matcher
+## Aarstiderne Product Matcher
 
 Tiny app with two endpoints:
 
