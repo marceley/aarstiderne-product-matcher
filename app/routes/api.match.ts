@@ -20,6 +20,10 @@ export async function action({ request }: ActionFunctionArgs) {
     const results: { ingredient: string; matches: { id: string; title: string | null; score: number }[] }[] = [];
     for (let i = 0; i < ingredients.length; i++) {
       const emb = embeddings[i];
+      if (!emb || emb.length === 0) {
+        results.push({ ingredient: ingredients[i], matches: [] });
+        continue;
+      }
       const embLiteral = `[${emb.join(",")}]`;
       const rows = await client.sql<any>`
         SELECT id_text, title, 1 - (embedding <=> ${embLiteral}::vector) AS score

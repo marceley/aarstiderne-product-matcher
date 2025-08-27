@@ -26,7 +26,7 @@ async function runScrape(): Promise<Response> {
       const id = ids[i] || crypto.randomUUID();
       const title = titles[i] || null;
       const embedding = embeddings[i] ?? null;
-      const embeddingLiteral = embedding ? `[${embedding.join(",")}]` : null;
+      const embeddingLiteral = embedding && embedding.length > 0 ? `[${embedding.join(",")}]` : null;
       await client.sql`
         INSERT INTO products (id_text, title, raw, embedding)
         VALUES (${id}, ${title}, ${JSON.stringify(data[i])}, ${embeddingLiteral}::vector)
