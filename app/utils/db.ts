@@ -1,42 +1,15 @@
 import { createPool } from "@vercel/postgres";
 
-function resolveDatabaseUrl(): string | undefined {
-  // Prefer Vercel Postgres defaults
-  if (process.env.POSTGRES_URL && process.env.POSTGRES_URL.trim().length > 0) {
-    return process.env.POSTGRES_URL;
-  }
-  // Explicit connection string fallback (custom)
-  if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0) {
-    return process.env.DATABASE_URL;
-  }
-  // Individual parts (Vercel naming)
-  const pgHost = process.env.POSTGRES_HOST;
-  const pgPort = process.env.POSTGRES_PORT || "5432";
-  const pgUser = process.env.POSTGRES_USER;
-  const pgPassword = process.env.POSTGRES_PASSWORD;
-  const pgDb = process.env.POSTGRES_DATABASE;
-  if (pgHost && pgUser && pgPassword && pgDb) {
-    return `postgres://${encodeURIComponent(pgUser)}:${encodeURIComponent(pgPassword)}@${pgHost}:${pgPort}/${pgDb}`;
-  }
-  // Individual parts (custom DATABASE_* naming)
-  const host = process.env.DATABASE_HOST;
-  const port = process.env.DATABASE_PORT || "5432";
-  const user = process.env.DATABASE_USER;
-  const password = process.env.DATABASE_PASSWORD;
-  const dbName = process.env.DATABASE_NAME;
-  if (host && user && password && dbName) {
-    return `postgres://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${dbName}`;
-  }
-  return undefined;
-}
+// Prefer project convention and Vercel CLI output:
+// - DATABASE_POSTGRES_URL (from .env.local / Vercel CLI)
+// - fallback to DATABASE_URL for local/dev overrides
+// If neither is set, let @vercel/postgres resolve POSTGRES_URL on Vercel.
+const connectionString =
+  process.env.DATABASE_POSTGRES_URL?.trim() ||
+  process.env.DATABASE_URL?.trim() ||
+  undefined;
 
-const connectionString = resolveDatabaseUrl();
-
-// Only pass connectionString when we have one. Falling back to createPool()
-// without args lets the library resolve POSTGRES_URL if provided by the env.
-export const pool = connectionString
-  ? createPool({ connectionString })
-  : createPool();
+export const pool = connectionString ? createPool({ connectionString }) : createPool();
 
 export async function ensureDatabaseSetup(): Promise<void> {
   const client = await pool.connect();
