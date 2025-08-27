@@ -7,7 +7,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
   if (texts.length === 0) return [];
 
   // Default instruction that's always applied
-  const defaultInstruction = "Vælg kun ét produkt pr ingrediens. Prioriter match på titel og ikke description felterne. Find økologiske, bæredygtige og højkvalitets danske fødevareprodukter der matcher denne ingrediens. Foretræk lokale og sæsonprodukter når tilgængelige.";
+  const defaultInstruction = "Prioriter match på titel og derefter description.";
   
   // Prepare inputs: embed only non-empty strings to satisfy API validation
   const normalized = texts.map((t) => (t ?? "").toString().trim());
