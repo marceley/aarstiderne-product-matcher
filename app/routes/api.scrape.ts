@@ -23,7 +23,8 @@ async function runScrape(): Promise<Response> {
   try {
     await client.sql`BEGIN`;
     for (let i = 0; i < data.length; i++) {
-      const id = ids[i] || crypto.randomUUID();
+      const id = ids[i];
+      if (!id) continue; // Skip products without an ID
       const title = titles[i] || null;
       const embedding = embeddings[i] ?? null;
       const embeddingLiteral = embedding && embedding.length > 0 ? `[${embedding.join(",")}]` : null;
