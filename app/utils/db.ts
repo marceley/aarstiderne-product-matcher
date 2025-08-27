@@ -1,9 +1,24 @@
 import { createPool } from "@vercel/postgres";
 
 function resolveDatabaseUrl(): string | undefined {
+  // Prefer Vercel Postgres defaults
+  if (process.env.POSTGRES_URL && process.env.POSTGRES_URL.trim().length > 0) {
+    return process.env.POSTGRES_URL;
+  }
+  // Explicit connection string fallback (custom)
   if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0) {
     return process.env.DATABASE_URL;
   }
+  // Individual parts (Vercel naming)
+  const pgHost = process.env.POSTGRES_HOST;
+  const pgPort = process.env.POSTGRES_PORT || "5432";
+  const pgUser = process.env.POSTGRES_USER;
+  const pgPassword = process.env.POSTGRES_PASSWORD;
+  const pgDb = process.env.POSTGRES_DATABASE;
+  if (pgHost && pgUser && pgPassword && pgDb) {
+    return `postgres://${encodeURIComponent(pgUser)}:${encodeURIComponent(pgPassword)}@${pgHost}:${pgPort}/${pgDb}`;
+  }
+  // Individual parts (custom DATABASE_* naming)
   const host = process.env.DATABASE_HOST;
   const port = process.env.DATABASE_PORT || "5432";
   const user = process.env.DATABASE_USER;
