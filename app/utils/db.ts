@@ -26,4 +26,3 @@ export type DbProduct = {
   raw: unknown;
 };
 
-EOF

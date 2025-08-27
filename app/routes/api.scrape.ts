@@ -30,9 +30,10 @@ export async function action({ request }: ActionFunctionArgs) {
       const id = ids[i] || crypto.randomUUID();
       const title = titles[i] || null;
       const embedding = embeddings[i] ?? null;
+      const embeddingLiteral = embedding ? `[${embedding.join(",")}]` : null;
       await client.sql`
         INSERT INTO products (id_text, title, raw, embedding)
-        VALUES (${id}, ${title}, ${JSON.stringify(data[i])}, ${embedding ? (client as any).vector(embedding) : null})
+        VALUES (${id}, ${title}, ${JSON.stringify(data[i])}, ${embeddingLiteral}::vector)
         ON CONFLICT (id_text)
         DO UPDATE SET title = EXCLUDED.title, raw = EXCLUDED.raw, embedding = EXCLUDED.embedding;
       `;
@@ -51,4 +52,3 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export const loader = () => new Response("Not Found", { status: 404 });
 
-EOF

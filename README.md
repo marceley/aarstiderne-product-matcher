@@ -1,3 +1,29 @@
+## Product Matcher
+
+Tiny app with two endpoints:
+
+- POST `/api/scrape`: Fetches daily product feed, embeds titles, upserts to Postgres with pgvector.
+- POST `/api/match`: Body `{ "ingredients": ["tomato", "basil"] }` returns best-matching products `{ id, title }`.
+
+### Stack
+- React Router 7 (Remix OSS)
+- Vercel (deploy), Vercel Cron (11:00 PM UTC)
+- Vercel AI SDK + OpenAI embeddings `text-embedding-3-small`
+- Postgres (Neon recommended) with `pgvector`
+
+### Setup
+1) Create a Postgres DB (Neon) and enable `pgvector` extension.
+2) Copy `.env.example` to `.env` and set:
+   - `DATABASE_URL`
+   - `OPENAI_API_KEY`
+3) Run locally:
+   - `npm run dev`
+4) Deploy on Vercel and set same env vars. Vercel cron is configured in `vercel.json`.
+
+### Notes
+- Table `products(id_text text primary key, title text, raw jsonb, embedding vector(1536))`.
+- Vector search uses cosine similarity via `<->` and `<=>` operators.
+
 # Welcome to React Router!
 
 A modern, production-ready template for building full-stack React applications using React Router.

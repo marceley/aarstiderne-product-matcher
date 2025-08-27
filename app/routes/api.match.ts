@@ -20,11 +20,12 @@ export async function action({ request }: ActionFunctionArgs) {
     const results: { ingredient: string; matches: { id: string; title: string | null; score: number }[] }[] = [];
     for (let i = 0; i < ingredients.length; i++) {
       const emb = embeddings[i];
+      const embLiteral = `[${emb.join(",")}]`;
       const rows = await client.sql<any>`
-        SELECT id_text, title, 1 - (embedding <=> ${(client as any).vector(emb)}) AS score
+        SELECT id_text, title, 1 - (embedding <=> ${embLiteral}::vector) AS score
         FROM products
         WHERE embedding IS NOT NULL
-        ORDER BY embedding <-> ${(client as any).vector(emb)}
+        ORDER BY embedding <-> ${embLiteral}::vector
         LIMIT 5;
       `;
       const matches = rows.rows.map((r: any) => ({ id: r.id_text as string, title: (r.title as string) ?? null, score: Number(r.score) }))
@@ -40,4 +41,3 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export const loader = () => new Response("Not Found", { status: 404 });
 
-EOF
