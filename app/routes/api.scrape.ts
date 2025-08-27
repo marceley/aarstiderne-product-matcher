@@ -14,7 +14,7 @@ async function runScrape(): Promise<Response> {
   const data = (await res.json()) as unknown[];
 
   // Expect array of products; compute embeddings from title
-  const titles: string[] = data.map((d: any) => d?.title || d?.name || "");
+  const titles: string[] = data.map((d: any) => d?.Title || d?.title || d?.name || "");
   const ids: string[] = data.map((d: any) => String(d?.id ?? d?.productId ?? d?.sku ?? ""));
 
   const embeddings = await getEmbeddings(titles);
