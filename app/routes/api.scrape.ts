@@ -1,12 +1,8 @@
-import type { ActionFunctionArgs } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { ensureDatabaseSetup, pool } from "../utils/db";
 import { getEmbeddings } from "../utils/embeddings";
 
-export async function action({ request }: ActionFunctionArgs) {
-  if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
-  }
-
+async function runScrape(): Promise<Response> {
   // Basic auth for external feed
   const url = "https://productfeed.aarstiderne.com/output/productfeed110.json";
   const auth = "Basic " + Buffer.from("ProductFeed:Vinter2019").toString("base64");
@@ -47,8 +43,18 @@ export async function action({ request }: ActionFunctionArgs) {
     client.release();
   }
 
-  return Response.json({ upserted: data.length });
+  return Response.json({ ok: true });
 }
 
-export const loader = () => new Response("Not Found", { status: 404 });
+export async function action({ request }: ActionFunctionArgs) {
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+  return runScrape();
+}
+
+export async function loader(_args: LoaderFunctionArgs) {
+  // Allow GET for Vercel Cron
+  return runScrape();
+}
 

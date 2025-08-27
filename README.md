@@ -20,6 +20,26 @@ Tiny app with two endpoints:
    - `npm run dev`
 4) Deploy on Vercel and set same env vars. Vercel cron is configured in `vercel.json`.
 
+### Production
+
+- Base URL: https://aarstiderne-product-matcher.vercel.app/
+- Cron: GET `https://aarstiderne-product-matcher.vercel.app/api/scrape` runs daily at 23:00 UTC (see `vercel.json`).
+- Manual scrape trigger:
+
+```bash
+curl -X POST https://aarstiderne-product-matcher.vercel.app/api/scrape
+# or GET (compatible with Vercel Cron)
+curl https://aarstiderne-product-matcher.vercel.app/api/scrape
+```
+
+- Matching API example:
+
+```bash
+curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match \
+  -H 'Content-Type: application/json' \
+  -d '{"ingredients":["tomato","basil"]}'
+```
+
 ### Notes
 - Table `products(id_text text primary key, title text, raw jsonb, embedding vector(1536))`.
 - Vector search uses cosine similarity via `<->` and `<=>` operators.
