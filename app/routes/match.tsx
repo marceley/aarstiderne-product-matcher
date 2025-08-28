@@ -18,16 +18,18 @@ export default function Match() {
   const [matches, setMatches] = useState<MatchApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ingredients, setIngredients] = useState("tomat\nagurk\nkombucha");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.target as HTMLFormElement);
-    const ingredients = formData.get('ingredients') as string;
+    const ingredientsText = formData.get('ingredients') as string;
+    setIngredients(ingredientsText);
     const response = await fetch('/api/match', {
       method: 'POST',
       body: JSON.stringify({ 
-        ingredients: ingredients.split('\n')
+        ingredients: ingredientsText.split('\n')
       }),
     });
     if (!response.ok) {
@@ -37,15 +39,6 @@ export default function Match() {
     setMatches(data);
     setLoading(false);
   };
-
-  if (loading) {
-    return (
-      <div style={{ padding: 16 }}>
-        <h1>Matches</h1>
-        <p>Loading...</p>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -74,8 +67,10 @@ export default function Match() {
                   id="ingredients"
                   name="ingredients" 
                   placeholder="Enter ingredients, one per line" 
-                  className="w-full h-24 p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm" 
-                  defaultValue={["tomat", "agurk", "kombucha"].join("\n")}
+                  className="w-full h-48 p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm" 
+                  value={ingredients}
+                  onChange={(e) => setIngredients(e.target.value)}
+                  rows={12}
                 />
               </div>
               <button 
@@ -90,14 +85,14 @@ export default function Match() {
 
         {/* Right Column - Results */}
         <div className="w-1/2">
-          <div className="bg-white p-4 rounded-lg shadow-sm border min-h-[300px]">
+          <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
             <h2 className="text-base font-semibold mb-3">Results</h2>
             {loading ? (
-              <div className="flex items-center justify-center h-48">
+              <div className="flex items-center justify-center flex-1">
                 <div className="text-gray-500 text-sm">Loading matches...</div>
               </div>
             ) : matches?.results && matches.results.length > 0 ? (
-              <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 {matches.results.map((match) => (
                   <div key={match.ingredient} className="border-b border-gray-200 pb-3 last:border-b-0">
                     <h3 className="font-semibold text-base text-gray-800 mb-2">{match.ingredient}</h3>
@@ -118,7 +113,7 @@ export default function Match() {
                 ))}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
+              <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
                 Enter ingredients and click "Find Matches" to see results
               </div>
             )}
