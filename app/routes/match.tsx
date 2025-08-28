@@ -93,21 +93,51 @@ export default function Match() {
               </div>
             ) : matches?.results && matches.results.length > 0 ? (
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                {matches.results.map((match) => (
+                <div className="p-2 bg-gray-50 rounded text-sm mb-3 sticky top-0 z-10">
+                  {(() => {
+                    const topScoreCount = matches.results.filter(match => 
+                      match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= 95
+                    ).length;
+                    const totalIngredients = matches.results.length;
+                    return `${topScoreCount} of ${totalIngredients} ingredients found excellent matches (95%+)`;
+                  })()}
+                </div>
+                  {matches.results.map((match) => (
                   <div key={match.ingredient} className="border-b border-gray-200 pb-3 last:border-b-0">
                     <h3 className="font-semibold text-base text-gray-800 mb-2">{match.ingredient}</h3>
                     <div className="space-y-1">
-                      {match.matches.map((m, index) => (
-                        <div key={m.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900 text-sm">{m.title}</div>
-                            <div className="text-xs text-gray-500">ID: {m.id}</div>
+                      {match.matches.map((m, index) => {
+                        const scorePercent = Math.round(m.score * 100);
+                        let bgColor = 'bg-gray-50';
+                        let textColor = 'text-gray-600';
+                        let borderColor = 'border-gray-300';
+                        
+                        if (scorePercent >= 95) {
+                          bgColor = 'bg-green-50';
+                          textColor = 'text-green-700';
+                          borderColor = 'border-green-300';
+                        } else if (scorePercent >= 90) {
+                          bgColor = 'bg-yellow-50';
+                          textColor = 'text-yellow-700';
+                          borderColor = 'border-yellow-300';
+                        } else {
+                          bgColor = 'bg-red-50';
+                          textColor = 'text-red-700';
+                          borderColor = 'border-red-300';
+                        }
+                        
+                        return (
+                          <div key={m.id} className={`flex items-center justify-between p-2 ${bgColor} rounded-md border-l-4 ${borderColor}`}>
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 text-sm">{m.title}</div>
+                              <div className="text-xs text-gray-500">ID: {m.id}</div>
+                            </div>
+                            <div className={`text-xs font-medium ${textColor}`}>
+                              {scorePercent}%
+                            </div>
                           </div>
-                          <div className="text-xs font-medium text-blue-600">
-                            {Math.round(m.score * 100)}%
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
