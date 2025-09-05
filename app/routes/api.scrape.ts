@@ -15,9 +15,17 @@ function cleanTitle(title: string | null | undefined): string | null {
   const wordsToRemove = removeWords.split(';').map(word => word.trim()).filter(word => word.length > 0);
   
   for (const word of wordsToRemove) {
-    // Remove the word/phrase (case insensitive)
-    const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-    cleanedTitle = cleanedTitle.replace(regex, '').trim();
+    // Remove the word/phrase (case insensitive) - try both word boundary and simple replacement
+    const wordBoundaryRegex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    const simpleRegex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    
+    const beforeReplace = cleanedTitle;
+    cleanedTitle = cleanedTitle.replace(wordBoundaryRegex, '').trim();
+    
+    // If word boundary didn't work, try simple replacement
+    if (cleanedTitle === beforeReplace) {
+      cleanedTitle = cleanedTitle.replace(simpleRegex, '').trim();
+    }
   }
   
   // Clean up multiple spaces
