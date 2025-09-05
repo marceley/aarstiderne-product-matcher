@@ -4,6 +4,7 @@ export default [
   route("api/scrape", "routes/api.scrape.ts"),
   route("api/match", "routes/api.match.ts"),
   route("api/products", "routes/api.products.ts"),
+  route("api/extract-recipe", "routes/api.extract-recipe.ts"),
   route("products", "routes/products.tsx"),
   route("match", "routes/match.tsx"),
 ] satisfies RouteConfig;

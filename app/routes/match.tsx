@@ -18,7 +18,70 @@ export default function Match() {
   const [matches, setMatches] = useState<MatchApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ingredients, setIngredients] = useState("tomat\nagurk\nkombucha");
+  const [ingredients, setIngredients] = useState("løg\nsquash\ningefær\nghee/smør\nmadraskarry\nkikærtemel\nsødmælksyoghurt\nvinterspinat eller anden frisk spinat\nhel spidskommen\nkorianderfrø\nsennepsfrø\nsesamfrø\nnigellafrø");
+  const [recipeUrl, setRecipeUrl] = useState("");
+  const [extracting, setExtracting] = useState(false);
+
+  const handleRecipeExtract = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!recipeUrl.trim()) return;
+    
+    setExtracting(true);
+    try {
+      const response = await fetch('/api/extract-recipe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: recipeUrl }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to extract recipe: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.ingredients && data.ingredients.length > 0) {
+        const ingredientsText = data.ingredients.join('\n');
+        setIngredients(ingredientsText);
+        setRecipeUrl(""); // Clear the URL field
+        
+        // Automatically run the matching after successful extraction
+        setLoading(true);
+        setError(null);
+        try {
+          const matchResponse = await fetch('/api/match', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              ingredients: data.ingredients
+            }),
+          });
+          
+          if (!matchResponse.ok) {
+            throw new Error(`HTTP error! status: ${matchResponse.status}`);
+          }
+          
+          const matchData = await matchResponse.json();
+          setMatches(matchData);
+        } catch (matchError) {
+          console.error('Match error:', matchError);
+          setError(matchError instanceof Error ? matchError.message : 'Failed to find matches');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        alert('No ingredients found in the recipe. Please check the URL or try a different recipe.');
+      }
+    } catch (error) {
+      console.error('Recipe extraction error:', error);
+      alert('Failed to extract ingredients from the recipe. Please check the URL and try again.');
+    } finally {
+      setExtracting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -80,6 +143,31 @@ export default function Match() {
                 Find Matches
               </button>
             </form>
+            
+            {/* Recipe URL Form */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-semibold mb-2 text-gray-800">Extract from Recipe URL</h3>
+              <p className="text-xs text-gray-600 mb-3">
+                Paste a recipe URL to automatically extract ingredients.
+              </p>
+              <form onSubmit={handleRecipeExtract} className="flex gap-2">
+                <input
+                  type="url"
+                  value={recipeUrl}
+                  onChange={(e) => setRecipeUrl(e.target.value)}
+                  placeholder="https://example.com/recipe"
+                  className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                  disabled={extracting}
+                />
+                <button
+                  type="submit"
+                  disabled={extracting || !recipeUrl.trim()}
+                  className="bg-green-500 text-white py-2 px-3 rounded-md hover:bg-green-600 transition-colors font-medium text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {extracting ? 'Extracting...' : 'Extract'}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
 
