@@ -25,7 +25,8 @@ export async function ensureDatabaseSetup(): Promise<void> {
         embedding vector(1536)
       );
     `;
-    await client.sql`CREATE INDEX IF NOT EXISTS products_embedding_idx ON products USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);`;
+    // Optimized vector index for better performance
+    await client.sql`CREATE INDEX IF NOT EXISTS products_embedding_idx ON products USING ivfflat (embedding vector_cosine_ops) WITH (lists = 200);`;
   } finally {
     client.release();
   }

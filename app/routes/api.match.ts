@@ -19,27 +19,44 @@ export async function action({ request }: ActionFunctionArgs) {
   const client = await pool.connect();
   try {
     const results: { ingredient: string; matches: { id: string; title: string | null; title_original: string | null; score: number }[] }[] = [];
+    
+    // Batch all valid embeddings for a single query
+    const validEmbeddings: { index: number; embedding: number[]; ingredient: string }[] = [];
     for (let i = 0; i < ingredients.length; i++) {
       const emb = embeddings[i];
-      if (!emb || emb.length === 0) {
+      if (emb && emb.length > 0) {
+        validEmbeddings.push({ index: i, embedding: emb, ingredient: ingredients[i] });
+      } else {
         results.push({ ingredient: ingredients[i], matches: [] });
-        continue;
       }
-      const embLiteral = `[${emb.join(",")}]`;
-      const rows = await client.sql<any>`
-        SELECT id_text, title, title_original, pimid, 1 - (embedding <=> ${embLiteral}::vector) AS score
-        FROM products
-        WHERE embedding IS NOT NULL
-        ORDER BY embedding <-> ${embLiteral}::vector
-        LIMIT 3;
-      `;
-      const matches = rows.rows.map((r: any) => ({ 
-        id: (r.pimid as string) || r.id_text, 
-        title: (r.title as string) ?? null, 
-        title_original: (r.title_original as string) ?? null,
-        score: Number(r.score) 
-      }))
-      results.push({ ingredient: ingredients[i], matches });
+    }
+    
+    if (validEmbeddings.length > 0) {
+      // Execute queries in parallel instead of UNION (simpler and more reliable)
+      const queryPromises = validEmbeddings.map(async ({ embedding, index, ingredient }) => {
+        const embLiteral = `[${embedding.join(",")}]`;
+        const rows = await client.sql<any>`
+          SELECT id_text, title, title_original, pimid, 1 - (embedding <=> ${embLiteral}::vector) AS score
+          FROM products
+          WHERE embedding IS NOT NULL
+          ORDER BY embedding <-> ${embLiteral}::vector
+          LIMIT 3;
+        `;
+        return { index, ingredient, rows: rows.rows };
+      });
+      
+      const queryResults = await Promise.all(queryPromises);
+      
+      // Process results in original order
+      for (const { index, ingredient, rows } of queryResults) {
+        const matches = rows.map((r: any) => ({ 
+          id: (r.pimid as string) || r.id_text, 
+          title: (r.title as string) ?? null, 
+          title_original: (r.title_original as string) ?? null,
+          score: Number(r.score) 
+        }));
+        results.push({ ingredient, matches });
+      }
     }
 
     const simplified = results.map((r) => ({ 

@@ -3,6 +3,9 @@ import { createOpenAI } from "@ai-sdk/openai";
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Simple in-memory cache for embeddings
+const embeddingCache = new Map<string, number[]>();
+
 export async function getEmbeddings(texts: string[], instructions?: string): Promise<number[][]> {
   if (texts.length === 0) return [];
 
@@ -28,11 +31,39 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
 
   let embedded: number[][] = [];
   if (valuesToEmbed.length > 0) {
-    const { embeddings } = await embedMany({
-      model: openai.embedding("text-embedding-3-small"),
-      values: valuesToEmbed,
-    });
-    embedded = embeddings.map((e) => e as unknown as number[]);
+    // Check cache first
+    const uncachedValues: string[] = [];
+    const uncachedIndices: number[] = [];
+    const cachedEmbeddings: (number[] | null)[] = [];
+    
+    for (let i = 0; i < valuesToEmbed.length; i++) {
+      const value = valuesToEmbed[i];
+      const cached = embeddingCache.get(value);
+      if (cached) {
+        cachedEmbeddings[i] = cached;
+      } else {
+        uncachedValues.push(value);
+        uncachedIndices.push(i);
+        cachedEmbeddings[i] = null;
+      }
+    }
+    
+    // Get embeddings for uncached values
+    if (uncachedValues.length > 0) {
+      const { embeddings } = await embedMany({
+        model: openai.embedding("text-embedding-3-small"),
+        values: uncachedValues,
+      });
+      
+      // Cache the new embeddings
+      for (let i = 0; i < uncachedValues.length; i++) {
+        const embedding = embeddings[i] as unknown as number[];
+        embeddingCache.set(uncachedValues[i], embedding);
+        cachedEmbeddings[uncachedIndices[i]] = embedding;
+      }
+    }
+    
+    embedded = cachedEmbeddings.filter((e): e is number[] => e !== null);
   }
 
   // Reconstruct result aligned to original input order
