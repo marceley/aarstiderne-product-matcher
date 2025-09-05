@@ -2,6 +2,30 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { ensureDatabaseSetup, pool } from "../utils/db";
 import { getEmbeddings } from "../utils/embeddings";
 
+function cleanTitle(title: string | null | undefined): string | null {
+  if (!title) return null;
+  
+  // Get removal words from environment variable
+  const removeWords = process.env.TITLE_REMOVE_WORDS;
+  if (!removeWords) return title;
+  
+  let cleanedTitle = title;
+  
+  // Split by semicolon and remove each word/phrase
+  const wordsToRemove = removeWords.split(';').map(word => word.trim()).filter(word => word.length > 0);
+  
+  for (const word of wordsToRemove) {
+    // Remove the word/phrase (case insensitive)
+    const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    cleanedTitle = cleanedTitle.replace(regex, '').trim();
+  }
+  
+  // Clean up multiple spaces
+  cleanedTitle = cleanedTitle.replace(/\s+/g, ' ').trim();
+  
+  return cleanedTitle.length > 0 ? cleanedTitle : null;
+}
+
 async function runScrape(): Promise<Response> {
   // Basic auth for external feed
   const url = "https://productfeed.aarstiderne.com/output/productfeed110.json";
@@ -86,7 +110,7 @@ async function runScrape(): Promise<Response> {
         const id = ids[j];
         if (!id) continue;
         
-        const title = titles[j] || null;
+        const title = cleanTitle(titles[j]) || null;
         const embedding = embeddings[j] ?? null;
         const embeddingLiteral = embedding && embedding.length > 0 ? `[${embedding.join(",")}]` : null;
         
