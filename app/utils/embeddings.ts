@@ -3,11 +3,14 @@ import { createOpenAI } from "@ai-sdk/openai";
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Simple in-memory cache for embeddings
+// Simple in-memory cache for embeddings with size limit
 const embeddingCache = new Map<string, number[]>();
+const MAX_CACHE_SIZE = 1000; // Limit cache size to prevent memory issues
 
 export async function getEmbeddings(texts: string[], instructions?: string): Promise<number[][]> {
   if (texts.length === 0) return [];
+  
+  const startTime = Date.now();
 
   // Default instruction that's always applied
   const defaultInstruction = "Prioriter match på titel og derefter description.";
@@ -28,13 +31,14 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
       valuesToEmbed.push(textWithContext);
     }
   }
+  
+  let uncachedValues: string[] = [];
 
-  let embedded: number[][] = [];
+  let embedded: (number[] | null)[] = [];
   if (valuesToEmbed.length > 0) {
-    // Check cache first
-    const uncachedValues: string[] = [];
+    // Check cache first and separate cached vs uncached
     const uncachedIndices: number[] = [];
-    const cachedEmbeddings: (number[] | null)[] = [];
+    const cachedEmbeddings: (number[] | null)[] = Array(valuesToEmbed.length).fill(null);
     
     for (let i = 0; i < valuesToEmbed.length; i++) {
       const value = valuesToEmbed[i];
@@ -44,26 +48,35 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
       } else {
         uncachedValues.push(value);
         uncachedIndices.push(i);
-        cachedEmbeddings[i] = null;
       }
     }
     
-    // Get embeddings for uncached values
+    // Get embeddings for uncached values in a single batch request
     if (uncachedValues.length > 0) {
+      console.log(`Batch embedding request for ${uncachedValues.length} uncached ingredients`);
       const { embeddings } = await embedMany({
         model: openai.embedding("text-embedding-3-small"),
         values: uncachedValues,
       });
       
-      // Cache the new embeddings
+      // Cache the new embeddings and add to results
       for (let i = 0; i < uncachedValues.length; i++) {
         const embedding = embeddings[i] as unknown as number[];
+        
+        // Add to cache with size limit
+        if (embeddingCache.size >= MAX_CACHE_SIZE) {
+          // Remove oldest entry (simple LRU)
+          const firstKey = embeddingCache.keys().next().value;
+          if (firstKey) {
+            embeddingCache.delete(firstKey);
+          }
+        }
         embeddingCache.set(uncachedValues[i], embedding);
         cachedEmbeddings[uncachedIndices[i]] = embedding;
       }
     }
     
-    embedded = cachedEmbeddings.filter((e): e is number[] => e !== null);
+    embedded = cachedEmbeddings;
   }
 
   // Reconstruct result aligned to original input order
@@ -73,5 +86,12 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
   }
 
   // Replace nulls with empty arrays to match return type number[][]
-  return result.map((e) => e ?? []);
+  const finalResult = result.map((e) => e ?? []);
+  
+  // Log performance metrics
+  const totalTime = Date.now() - startTime;
+  const cacheHitRate = (valuesToEmbed.length - uncachedValues.length) / valuesToEmbed.length * 100;
+  console.log(`Embedding performance: ${totalTime}ms total, ${uncachedValues.length} new, ${Math.round(cacheHitRate)}% cache hit rate`);
+  
+  return finalResult;
 }
