@@ -13,7 +13,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
   const defaultInstruction = "Prioriter match på titel og derefter description.";
   
   // Prepare inputs: embed only non-empty strings to satisfy API validation
-  const normalized = texts.map((t) => (t ?? "").toString().trim());
+  const normalized = texts.map((t) => (t ?? "").toString().trim().toLowerCase());
   const indicesToEmbed: number[] = [];
   const valuesToEmbed: string[] = [];
   

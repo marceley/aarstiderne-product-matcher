@@ -7,12 +7,12 @@ function cleanTitle(title: string | null | undefined): string | null {
   
   // Get removal words from environment variable
   const removeWords = process.env.TITLE_REMOVE_WORDS;
-  if (!removeWords) return title;
+  if (!removeWords) return title.toLowerCase();
   
-  let cleanedTitle = title;
+  let cleanedTitle = title.toLowerCase();
   
-  // Split by semicolon and remove each word/phrase
-  const wordsToRemove = removeWords.split(';').map(word => word.trim()).filter(word => word.length > 0);
+  // Split by semicolon and remove each word/phrase (also lowercase for consistency)
+  const wordsToRemove = removeWords.split(';').map(word => word.trim().toLowerCase()).filter(word => word.length > 0);
   
   for (const word of wordsToRemove) {
     // Remove the word/phrase (case insensitive) - try both word boundary and simple replacement
