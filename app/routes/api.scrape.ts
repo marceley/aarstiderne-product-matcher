@@ -94,7 +94,7 @@ async function runScrape(): Promise<Response> {
         const imageUrl = batch[j]?.Image || "";
         let pimId = null;
         if (imageUrl) {
-          const match = imageUrl.match(/product\/.*?-(\d{4})-\d+-\d+-\d+\.png/);
+          const match = imageUrl.match(/product\/.*?-(\d{1,4})-\d+-\d+-\d+\.png/);
           pimId = match ? match[1] : null;
         }
         
