@@ -6,6 +6,7 @@ type MatchResult = {
   matches: {
     id: string;
     title: string;
+    title_original: string;
     score: number;
   }[];
 };
@@ -219,6 +220,9 @@ export default function Match() {
                           <div key={m.id} className={`flex items-center justify-between p-2 ${bgColor} rounded-md border-l-4 ${borderColor}`}>
                             <div className="flex-1">
                               <div className="font-medium text-gray-900 text-sm">{m.title}</div>
+                              {m.title_original && m.title_original !== m.title && (
+                                <div className="text-xs text-gray-500 italic">Original: {m.title_original}</div>
+                              )}
                               <div className="text-xs text-gray-500">ID: {m.id}</div>
                             </div>
                             <div className={`text-xs font-medium ${textColor}`}>

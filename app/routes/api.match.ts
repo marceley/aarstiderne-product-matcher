@@ -18,7 +18,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const embeddings = await getEmbeddings(ingredients, instructions);
   const client = await pool.connect();
   try {
-    const results: { ingredient: string; matches: { id: string; title: string | null; score: number }[] }[] = [];
+    const results: { ingredient: string; matches: { id: string; title: string | null; title_original: string | null; score: number }[] }[] = [];
     for (let i = 0; i < ingredients.length; i++) {
       const emb = embeddings[i];
       if (!emb || emb.length === 0) {
@@ -27,7 +27,7 @@ export async function action({ request }: ActionFunctionArgs) {
       }
       const embLiteral = `[${emb.join(",")}]`;
       const rows = await client.sql<any>`
-        SELECT id_text, title, pimid, 1 - (embedding <=> ${embLiteral}::vector) AS score
+        SELECT id_text, title, title_original, pimid, 1 - (embedding <=> ${embLiteral}::vector) AS score
         FROM products
         WHERE embedding IS NOT NULL
         ORDER BY embedding <-> ${embLiteral}::vector
@@ -36,6 +36,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const matches = rows.rows.map((r: any) => ({ 
         id: (r.pimid as string) || r.id_text, 
         title: (r.title as string) ?? null, 
+        title_original: (r.title_original as string) ?? null,
         score: Number(r.score) 
       }))
       results.push({ ingredient: ingredients[i], matches });
@@ -46,6 +47,7 @@ export async function action({ request }: ActionFunctionArgs) {
       matches: r.matches.map((m) => ({ 
         id: m.id, 
         title: m.title,
+        title_original: m.title_original,
         score: m.score 
       })) 
     }));

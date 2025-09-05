@@ -19,6 +19,7 @@ export async function ensureDatabaseSetup(): Promise<void> {
       CREATE TABLE IF NOT EXISTS products (
         id_text text PRIMARY KEY,
         title text,
+        title_original text,
         pimId text,
         raw jsonb NOT NULL,
         embedding vector(1536)

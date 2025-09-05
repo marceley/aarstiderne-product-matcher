@@ -110,6 +110,7 @@ async function runScrape(): Promise<Response> {
         const id = ids[j];
         if (!id) continue;
         
+        const titleOriginal = titles[j] || null;
         const title = cleanTitle(titles[j]) || null;
         const embedding = embeddings[j] ?? null;
         const embeddingLiteral = embedding && embedding.length > 0 ? `[${embedding.join(",")}]` : null;
@@ -123,10 +124,10 @@ async function runScrape(): Promise<Response> {
         }
         
         await client.sql`
-          INSERT INTO products (id_text, title, pimid, raw, embedding)
-          VALUES (${id}, ${title}, ${pimId}, ${JSON.stringify(batch[j])}, ${embeddingLiteral}::vector)
+          INSERT INTO products (id_text, title, title_original, pimid, raw, embedding)
+          VALUES (${id}, ${title}, ${titleOriginal}, ${pimId}, ${JSON.stringify(batch[j])}, ${embeddingLiteral}::vector)
           ON CONFLICT (id_text)
-          DO UPDATE SET title = EXCLUDED.title, pimid = EXCLUDED.pimid, raw = EXCLUDED.raw, embedding = EXCLUDED.embedding;
+          DO UPDATE SET title = EXCLUDED.title, title_original = EXCLUDED.title_original, pimid = EXCLUDED.pimid, raw = EXCLUDED.raw, embedding = EXCLUDED.embedding;
         `;
       }
       
