@@ -121,31 +121,9 @@ export default function Match() {
         <div className="w-1/2">
           <div className="bg-white p-4 rounded-lg shadow-sm border">
             <h2 className="text-base font-semibold mb-3">Ingredients</h2>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-              <div>
-                <label htmlFor="ingredients" className="block text-sm font-medium mb-1 text-gray-700">
-                  Ingredients (one per line):
-                </label>
-                <textarea 
-                  id="ingredients"
-                  name="ingredients" 
-                  placeholder="Enter ingredients, one per line" 
-                  className="w-full h-48 p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm" 
-                  value={ingredients}
-                  onChange={(e) => setIngredients(e.target.value)}
-                  rows={12}
-                />
-              </div>
-              <button 
-                type="submit" 
-                className="bg-blue-500 text-white py-2 px-3 rounded-md hover:bg-blue-600 transition-colors font-medium text-sm"
-              >
-                Find Matches
-              </button>
-            </form>
             
             {/* Recipe URL Form */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="mb-6 pb-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold mb-2 text-gray-800">Extract from Recipe URL</h3>
               <p className="text-xs text-gray-600 mb-3">
                 Paste a recipe URL to automatically extract ingredients.
@@ -168,6 +146,29 @@ export default function Match() {
                 </button>
               </form>
             </div>
+            
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <div>
+                <label htmlFor="ingredients" className="block text-sm font-medium mb-1 text-gray-700">
+                  Ingredients (one per line):
+                </label>
+                <textarea 
+                  id="ingredients"
+                  name="ingredients" 
+                  placeholder="Enter ingredients, one per line" 
+                  className="w-full h-48 p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm" 
+                  value={ingredients}
+                  onChange={(e) => setIngredients(e.target.value)}
+                  rows={12}
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="bg-blue-500 text-white py-2 px-3 rounded-md hover:bg-blue-600 transition-colors font-medium text-sm"
+              >
+                Find Matches
+              </button>
+            </form>
           </div>
         </div>
 
