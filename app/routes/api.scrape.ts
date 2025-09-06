@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import type { ActionFunctionArgs } from "react-router";
 import { ensureDatabaseSetup, pool } from "../utils/db";
 import { getEmbeddings } from "../utils/embeddings";
 
@@ -161,8 +161,4 @@ export async function action({ request }: ActionFunctionArgs) {
   return runScrape();
 }
 
-export async function loader(_args: LoaderFunctionArgs) {
-  // Allow GET for Vercel Cron
-  return runScrape();
-}
 
