@@ -1,12 +1,15 @@
 import type { ActionFunctionArgs } from "react-router";
 import { ensureDatabaseSetup, pool } from "../utils/db";
 import { getEmbeddings } from "../utils/embeddings";
+import { gzipSync } from "zlib";
 
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
-  await ensureDatabaseSetup();
+  
+  const startTime = Date.now();
+  console.log(`[MATCH] Starting request at ${new Date().toISOString()}`);
 
   const body = await request.json();
   const ingredients = (body?.ingredients ?? []) as string[];
@@ -15,7 +18,11 @@ export async function action({ request }: ActionFunctionArgs) {
     return new Response("Bad Request", { status: 400 });
   }
 
+  const embeddingStart = Date.now();
   const embeddings = await getEmbeddings(ingredients, instructions);
+  console.log(`[MATCH] Embeddings took ${Date.now() - embeddingStart}ms`);
+  
+  const dbStart = Date.now();
   const client = await pool.connect();
   try {
     const results: { ingredient: string; matches: { id: string; title: string | null; title_original: string | null; score: number }[] }[] = [];
@@ -32,23 +39,35 @@ export async function action({ request }: ActionFunctionArgs) {
     }
     
     if (validEmbeddings.length > 0) {
-      // Execute queries in parallel instead of UNION (simpler and more reliable)
-      const queryPromises = validEmbeddings.map(async ({ embedding, index, ingredient }) => {
+      // Use single optimized query with UNION for better performance
+      const unionQueries = validEmbeddings.map(({ embedding, index }) => {
         const embLiteral = `[${embedding.join(",")}]`;
-        const rows = await client.sql<any>`
-          SELECT id_text, title, title_original, pimid, 1 - (embedding <=> ${embLiteral}::vector) AS score
+        return `(
+          SELECT ${index} as query_index, id_text, title, title_original, pimid, 
+                 1 - (embedding <=> '${embLiteral}'::vector) AS score
           FROM products
           WHERE embedding IS NOT NULL
-          ORDER BY embedding <-> ${embLiteral}::vector
-          LIMIT 3;
-        `;
-        return { index, ingredient, rows: rows.rows };
+          ORDER BY embedding <-> '${embLiteral}'::vector
+          LIMIT 3
+        )`;
       });
       
-      const queryResults = await Promise.all(queryPromises);
+      const unionQuery = unionQueries.join(' UNION ALL ');
+      const queryResult = await client.query(unionQuery);
+      
+      // Group results by query index
+      const resultsByIndex = new Map<number, any[]>();
+      for (const row of queryResult.rows) {
+        const index = row.query_index;
+        if (!resultsByIndex.has(index)) {
+          resultsByIndex.set(index, []);
+        }
+        resultsByIndex.get(index)!.push(row);
+      }
       
       // Process results in original order
-      for (const { index, ingredient, rows } of queryResults) {
+      for (const { index, ingredient } of validEmbeddings) {
+        const rows = resultsByIndex.get(index) || [];
         const matches = rows.map((r: any) => ({ 
           id: (r.pimid as string) || r.id_text, 
           title: (r.title as string) ?? null, 
@@ -68,7 +87,18 @@ export async function action({ request }: ActionFunctionArgs) {
         score: m.score 
       })) 
     }));
-    return Response.json({ results: simplified });
+    console.log(`[MATCH] Database query took ${Date.now() - dbStart}ms`);
+    
+    const jsonResponse = JSON.stringify({ results: simplified });
+    
+    const totalTime = Date.now() - startTime;
+    console.log(`[MATCH] Total request time: ${totalTime}ms, response size: ${jsonResponse.length} bytes`);
+    
+    return new Response(jsonResponse, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   } finally {
     client.release();
   }
