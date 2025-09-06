@@ -3,6 +3,7 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 export default [
   route("api/scrape", "routes/api.scrape.ts"),
   route("api/match", "routes/api.match.ts"),
+  route("api/match-production", "routes/api.match-production.ts"),
   route("api/products", "routes/api.products.ts"),
   route("api/extract-recipe", "routes/api.extract-recipe.ts"),
   route("api/tokens", "routes/api.tokens.ts"),
