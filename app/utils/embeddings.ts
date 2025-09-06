@@ -1,6 +1,7 @@
 import { embedMany } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-
+import { encoding_for_model } from "tiktoken";
+ 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Simple in-memory cache for embeddings with size limit
@@ -88,10 +89,15 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
   // Replace nulls with empty arrays to match return type number[][]
   const finalResult = result.map((e) => e ?? []);
   
+  // Calculate token usage
+  const encoding = encoding_for_model("text-embedding-3-small");
+  const totalTokens = valuesToEmbed.reduce((sum, text) => sum + encoding.encode(text).length, 0);
+  const newTokens = uncachedValues.reduce((sum, text) => sum + encoding.encode(text).length, 0);
+  
   // Log performance metrics
   const totalTime = Date.now() - startTime;
   const cacheHitRate = (valuesToEmbed.length - uncachedValues.length) / valuesToEmbed.length * 100;
-  console.log(`Embedding performance: ${totalTime}ms total, ${uncachedValues.length} new, ${Math.round(cacheHitRate)}% cache hit rate`);
+  console.log(`Embedding performance: ${totalTime}ms total, ${uncachedValues.length} new, ${Math.round(cacheHitRate)}% cache hit rate, ${totalTokens} total tokens, ${newTokens} new tokens`);
   
   return finalResult;
 }
