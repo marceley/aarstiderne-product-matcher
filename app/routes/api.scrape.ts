@@ -37,6 +37,7 @@ function cleanTitle(title: string | null | undefined): string | null {
 async function runScrape(): Promise<Response> {
   // Basic auth for external feed
   const url = "https://productfeed.aarstiderne.com/output/productfeed110.json";
+  // TODO: move to .env
   const auth = "Basic " + Buffer.from("ProductFeed:Vinter2019").toString("base64");
 
   await ensureDatabaseSetup();
