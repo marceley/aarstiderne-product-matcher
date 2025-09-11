@@ -1,8 +1,15 @@
 import { embedMany } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { gateway } from "@ai-sdk/gateway";
 import { encoding_for_model } from "tiktoken";
  
-const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Centralized embedding model name for easy changes
+const EMBEDDING_MODEL = "text-embedding-3-small";
+
+// Require Vercel AI Gateway to be configured
+const gatewayKey = process.env.AI_GATEWAY_API_KEY?.trim();
+if (!gatewayKey) {
+  throw new Error("AI_GATEWAY_API_KEY environment variable is required");
+}
 
 // Simple in-memory cache for embeddings with size limit
 const embeddingCache = new Map<string, number[]>();
@@ -14,7 +21,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
   const startTime = Date.now();
 
   // Default instruction that's always applied
-  const defaultInstruction = "Prioriter match på titel og derefter description.";
+  const defaultInstruction = "Prioriter match på feltet title og derefter feltet description.";
   
   // Prepare inputs: embed only non-empty strings to satisfy API validation
   const normalized = texts.map((t) => (t ?? "").toString().trim().toLowerCase());
@@ -28,7 +35,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
       const allInstructions = instructions 
         ? `${defaultInstruction}\n\nAdditional instructions: ${instructions}`
         : defaultInstruction;
-      const textWithContext = `${allInstructions}\n\nIngredient: ${normalized[i]}`;
+      const textWithContext = `${allInstructions}\n\nIngrediens: ${normalized[i]}`;
       valuesToEmbed.push(textWithContext);
     }
   }
@@ -56,7 +63,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
     if (uncachedValues.length > 0) {
       console.log(`Batch embedding request for ${uncachedValues.length} uncached ingredients`);
       const { embeddings } = await embedMany({
-        model: openai.embedding("text-embedding-3-small"),
+        model: `openai/${EMBEDDING_MODEL}`,
         values: uncachedValues,
       });
       
@@ -90,7 +97,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
   const finalResult = result.map((e) => e ?? []);
   
   // Calculate token usage
-  const encoding = encoding_for_model("text-embedding-3-small");
+  const encoding = encoding_for_model(EMBEDDING_MODEL);
   const totalTokens = valuesToEmbed.reduce((sum, text) => sum + encoding.encode(text).length, 0);
   const newTokens = uncachedValues.reduce((sum, text) => sum + encoding.encode(text).length, 0);
   
