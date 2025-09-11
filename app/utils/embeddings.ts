@@ -1,16 +1,15 @@
 import { embedMany } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
 import { gateway } from "@ai-sdk/gateway";
 import { encoding_for_model } from "tiktoken";
  
 // Centralized embedding model name for easy changes
 const EMBEDDING_MODEL = "text-embedding-3-small";
 
-// Prefer Vercel AI Gateway if configured, otherwise fall back to direct OpenAI
+// Require Vercel AI Gateway to be configured
 const gatewayKey = process.env.AI_GATEWAY_API_KEY?.trim();
-const useGateway = Boolean(gatewayKey);
-
-const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+if (!gatewayKey) {
+  throw new Error("AI_GATEWAY_API_KEY environment variable is required");
+}
 
 // Simple in-memory cache for embeddings with size limit
 const embeddingCache = new Map<string, number[]>();
@@ -64,9 +63,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
     if (uncachedValues.length > 0) {
       console.log(`Batch embedding request for ${uncachedValues.length} uncached ingredients`);
       const { embeddings } = await embedMany({
-        model: useGateway 
-          ? `openai/${EMBEDDING_MODEL}`
-          : openai.embedding(EMBEDDING_MODEL),
+        model: `openai/${EMBEDDING_MODEL}`,
         values: uncachedValues,
       });
       

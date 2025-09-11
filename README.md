@@ -14,10 +14,7 @@ Tiny app with two endpoints:
 ### Setup
 1) Create a Postgres DB (Neon) and enable `pgvector` extension.
 2) Set environment variables (locally in `.env.local`, on Vercel in Project → Settings → Environment Variables):
-   - Preferred via Vercel AI Gateway (recommended):
-     - `AI_GATEWAY_API_KEY` (from Vercel Dashboard → AI → Gateways → Your Gateway → Gateway Key)
-   - Fallback (legacy direct provider):
-     - `OPENAI_API_KEY`
+   - `AI_GATEWAY_API_KEY` (from Vercel Dashboard → AI → Gateways → Your Gateway → Gateway Key)
    - Postgres (one of):
      - `DATABASE_URL`
      - or individual vars: `DATABASE_HOST`, `DATABASE_PORT` (default 5432), `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`
@@ -25,15 +22,13 @@ Tiny app with two endpoints:
    - `npm run dev`
 4) Deploy on Vercel and set same env vars. Vercel cron is configured in `vercel.json`.
 
-### AI Gateway Migration Notes
+### AI Gateway Requirements
 
-- The app now prefers Vercel AI Gateway for embeddings. If `AI_GATEWAY_API_KEY` is set, all embedding requests are routed through the Gateway. If not set, it falls back to direct OpenAI using `OPENAI_API_KEY`.
+- The app requires Vercel AI Gateway for embeddings. The `AI_GATEWAY_API_KEY` environment variable must be set.
 - Where it's used: `app/utils/embeddings.ts` (used by `/api/scrape`, `/api/match`, `/api/match-production`).
 - Benefits: centralized keys, caching, rate limits, observability, and model/provider failover.
 - Setup: Install `@ai-sdk/gateway` package (already done) and set `AI_GATEWAY_API_KEY` environment variable.
-- Rollout and rollback:
-  - To enable: set `AI_GATEWAY_API_KEY` and redeploy.
-  - To rollback: unset `AI_GATEWAY_API_KEY` (or set it empty) to automatically fall back to `OPENAI_API_KEY` without code changes.
+- The app will fail to start if `AI_GATEWAY_API_KEY` is not configured.
 
 ### Production
 
