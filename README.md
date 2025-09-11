@@ -1,48 +1,48 @@
 ## Aarstiderne Product Matcher
 
-Tiny app with two endpoints:
+Lille app med to endpoints:
 
-- POST `/api/scrape`: Fetches daily product feed, embeds titles, upserts to Postgres with pgvector.
-- POST `/api/match`: Body `{ "ingredients": ["tomato", "basil"] }` returns best-matching products `{ id, title }`.
+- POST `/api/scrape`: Henter daglig produktfeed, laver embeddings af titler, indsætter i Postgres med pgvector.
+- POST `/api/match`: Body `{ "ingredients": ["tomato", "basil"] }` returnerer bedst matchende produkter `{ id, title }`.
 
 ### Stack
 - React Router 7 (Remix OSS)
-- Vercel (deploy), Vercel Cron (11:00 PM UTC)
+- Vercel (deploy), Vercel Cron (23:00 UTC)
 - Vercel AI SDK + OpenAI embeddings `text-embedding-3-small`
-- Postgres (Neon recommended) with `pgvector`
+- Postgres (Neon anbefalet) med `pgvector`
 
-### Setup
-1) Create a Postgres DB (Neon) and enable `pgvector` extension.
-2) Set environment variables (locally in `.env.local`, on Vercel in Project → Settings → Environment Variables):
-   - `AI_GATEWAY_API_KEY` (from Vercel Dashboard → AI → Gateways → Your Gateway → Gateway Key)
-   - Postgres (one of):
+### Opsætning
+1) Opret en Postgres DB (Neon) og aktiver `pgvector` extension.
+2) Sæt miljøvariabler (lokalt i `.env.local`, på Vercel i Project → Settings → Environment Variables):
+   - `AI_GATEWAY_API_KEY` (fra Vercel Dashboard → AI → Gateways → Your Gateway → Gateway Key)
+   - Postgres (en af):
      - `DATABASE_URL`
-     - or individual vars: `DATABASE_HOST`, `DATABASE_PORT` (default 5432), `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`
-3) Run locally:
+     - eller individuelle variabler: `DATABASE_HOST`, `DATABASE_PORT` (standard 5432), `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`
+3) Kør lokalt:
    - `npm run dev`
-4) Deploy on Vercel and set same env vars. Vercel cron is configured in `vercel.json`.
+4) Deploy på Vercel og sæt samme miljøvariabler. Vercel cron er konfigureret i `vercel.json`.
 
-### AI Gateway Requirements
+### AI Gateway Krav
 
-- The app requires Vercel AI Gateway for embeddings. The `AI_GATEWAY_API_KEY` environment variable must be set.
-- Where it's used: `app/utils/embeddings.ts` (used by `/api/scrape`, `/api/match`, `/api/match-production`).
-- Benefits: centralized keys, caching, rate limits, observability, and model/provider failover.
-- Setup: Install `@ai-sdk/gateway` package (already done) and set `AI_GATEWAY_API_KEY` environment variable.
-- The app will fail to start if `AI_GATEWAY_API_KEY` is not configured.
+- Appen kræver Vercel AI Gateway til embeddings. Miljøvariablen `AI_GATEWAY_API_KEY` skal være sat.
+- Hvor det bruges: `app/utils/embeddings.ts` (bruges af `/api/scrape`, `/api/match`, `/api/match-production`).
+- Fordele: centraliserede nøgler, caching, rate limits, observability og model/provider failover.
+- Opsætning: Installer `@ai-sdk/gateway` pakke (allerede gjort) og sæt `AI_GATEWAY_API_KEY` miljøvariabel.
+- Appen vil fejle ved opstart hvis `AI_GATEWAY_API_KEY` ikke er konfigureret.
 
-### Production
+### Produktion
 
 - Base URL: https://aarstiderne-product-matcher.vercel.app/
-- Cron: GET `https://aarstiderne-product-matcher.vercel.app/api/scrape` runs daily at 23:00 UTC (see `vercel.json`).
-- Manual scrape trigger:
+- Cron: GET `https://aarstiderne-product-matcher.vercel.app/api/scrape` kører dagligt kl. 23:00 UTC (se `vercel.json`).
+- Manuel scrape trigger:
 
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/scrape
-# or GET (compatible with Vercel Cron)
+# eller GET (kompatibel med Vercel Cron)
 curl https://aarstiderne-product-matcher.vercel.app/api/scrape
 ```
 
-- Matching API example:
+- Matching API eksempel:
 
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match \
@@ -50,17 +50,28 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match \
   -d '{"ingredients":["tomato","basil"]}'
 ```
 
-### Utilities
+### Værktøjer
 
-- Count rows in `products` (uses `.env.local`):
+- Tæl rækker i `products` (bruger `.env.local`):
 
 ```bash
 bash -lc 'set -a; source .env.local; set +a; node scripts/check-db.mjs'
 ```
 
-### Notes
-- Table `products(id_text text primary key, title text, raw jsonb, embedding vector(1536))`.
-- Vector search uses cosine similarity via `<->` and `<=>` operators.
+### Match Flow Beskrivelse
+
+1. **Input**: Liste af ingredienser (f.eks. `["tomato", "basil"]`)
+2. **Embedding**: Hver ingrediens konverteres til en 1536-dimensionel vektor via OpenAI `text-embedding-3-small`
+3. **Kontekst**: Embeddings inkluderer instruktioner: "Prioriter match på feltet title og derefter feltet description. Ingrediens: [ingrediens]"
+4. **Database søgning**: Vector similarity search i Postgres med pgvector
+   - Bruger cosine similarity (`<=>` operator) 
+   - Returnerer top 3 matches per ingrediens
+5. **Scoring**: Similarity score beregnes som `1 - (embedding <=> query_vector)`
+6. **Output**: Struktureret JSON med ingredienser og deres bedste matches
+
+### Noter
+- Tabel `products(id_text text primary key, title text, raw jsonb, embedding vector(1536))`.
+- Vector søgning bruger cosine similarity via `<->` og `<=>` operatorer.
 
 # Welcome to React Router!
 

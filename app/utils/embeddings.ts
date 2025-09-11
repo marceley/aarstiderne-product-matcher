@@ -21,7 +21,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
   const startTime = Date.now();
 
   // Default instruction that's always applied
-  const defaultInstruction = "Prioriter match på titel og derefter description.";
+  const defaultInstruction = "Prioriter match på feltet title og derefter feltet description.";
   
   // Prepare inputs: embed only non-empty strings to satisfy API validation
   const normalized = texts.map((t) => (t ?? "").toString().trim().toLowerCase());
@@ -35,7 +35,7 @@ export async function getEmbeddings(texts: string[], instructions?: string): Pro
       const allInstructions = instructions 
         ? `${defaultInstruction}\n\nAdditional instructions: ${instructions}`
         : defaultInstruction;
-      const textWithContext = `${allInstructions}\n\nIngredient: ${normalized[i]}`;
+      const textWithContext = `${allInstructions}\n\nIngrediens: ${normalized[i]}`;
       valuesToEmbed.push(textWithContext);
     }
   }
