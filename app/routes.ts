@@ -9,4 +9,5 @@ export default [
   route("api/tokens", "routes/api.tokens.ts"),
   route("products", "routes/products.tsx"),
   route("match", "routes/match.tsx"),
+  route("/", "routes/welcome.tsx"),
 ] satisfies RouteConfig;

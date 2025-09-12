@@ -3,7 +3,7 @@
 Lille app med to endpoints:
 
 - POST `/api/scrape`: Henter daglig produktfeed, laver embeddings af titler, indsætter i Postgres med pgvector.
-- POST `/api/match`: Body `{ "ingredients": ["tomato", "basil"] }` returnerer bedst matchende produkter `{ id, title }`.
+- POST `/api/match`: Body `{ "ingredients": ["tomato", "basil"], "recipeSlug": "optional_slug" }` returnerer bedst matchende produkter `{ id, title }`.
 
 ### Stack
 - React Router 7 (Remix OSS)
@@ -47,7 +47,7 @@ curl https://aarstiderne-product-matcher.vercel.app/api/scrape
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match \
   -H 'Content-Type: application/json' \
-  -d '{"ingredients":["tomato","basil"]}'
+  -d '{"ingredients":["tomato","basil"],"recipeSlug":"rice-bowl-med-misobagt-aubergine"}'
 ```
 
 ### Værktøjer
@@ -60,18 +60,40 @@ bash -lc 'set -a; source .env.local; set +a; node scripts/check-db.mjs'
 
 ### Match Flow Beskrivelse
 
-1. **Input**: Liste af ingredienser (f.eks. `["tomato", "basil"]`)
-2. **Embedding**: Hver ingrediens konverteres til en 1536-dimensionel vektor via OpenAI `text-embedding-3-small`
-3. **Kontekst**: Embeddings inkluderer instruktioner: "Prioriter match på feltet title og derefter feltet description. Ingrediens: [ingrediens]"
-4. **Database søgning**: Vector similarity search i Postgres med pgvector
+1. **Input**: Liste af ingredienser (f.eks. `["tomato", "basil"]`) og valgfri `recipeSlug`
+2. **Cache check**: Hvis `recipeSlug` er angivet, tjekkes database cache først (1 måneds TTL)
+3. **Embedding**: Hver ingrediens konverteres til en 1536-dimensionel vektor via OpenAI `text-embedding-3-small`
+4. **Kontekst**: Embeddings inkluderer instruktioner: "Prioriter match på feltet title og derefter feltet description. Ingrediens: [ingrediens]"
+5. **Database søgning**: Vector similarity search i Postgres med pgvector
    - Bruger cosine similarity (`<=>` operator) 
    - Returnerer top 3 matches per ingrediens
-5. **Scoring**: Similarity score beregnes som `1 - (embedding <=> query_vector)`
-6. **Output**: Struktureret JSON med ingredienser og deres bedste matches
+6. **Scoring**: Similarity score beregnes som `1 - (embedding <=> query_vector)`
+7. **Cache**: Resultater caches i `recipe_cache` tabel med `recipeSlug` som nøgle (hvis angivet)
+8. **Output**: Struktureret JSON med ingredienser og deres bedste matches
+
+### Database Schema
+
+**Products tabel:**
+```sql
+products(id_text text primary key, title text, raw jsonb, embedding vector(1536))
+```
+
+**Recipe Cache tabel:**
+```sql
+recipe_cache(
+  recipe_slug text primary key,
+  results jsonb not null,
+  created_at timestamp default now(),
+  expires_at timestamp not null,
+  hit_count integer default 0,
+  last_accessed timestamp default now()
+)
+```
 
 ### Noter
-- Tabel `products(id_text text primary key, title text, raw jsonb, embedding vector(1536))`.
 - Vector søgning bruger cosine similarity via `<->` og `<=>` operatorer.
+- Recipe cache har 1 måneds TTL og track hit counts for analytics.
+- Cache headers: `X-Cache: HIT/MISS` og `X-Cache-Hits: N` for monitoring.
 
 # Welcome to React Router!
 

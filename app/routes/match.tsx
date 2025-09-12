@@ -22,6 +22,7 @@ export default function Match() {
   const [ingredients, setIngredients] = useState("løg\nsquash\ningefær\nghee/smør\nmadraskarry\nkikærtemel\nsødmælksyoghurt\nvinterspinat eller anden frisk spinat\nhel spidskommen\nkorianderfrø\nsennepsfrø\nsesamfrø\nnigellafrø");
   const [recipeUrl, setRecipeUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
+  const [recipeSlug, setRecipeSlug] = useState("");
 
   const handleRecipeExtract = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -57,7 +58,8 @@ export default function Match() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-              ingredients: data.ingredients
+              ingredients: data.ingredients,
+              recipeSlug: recipeSlug || undefined
             }),
           });
           
@@ -92,8 +94,12 @@ export default function Match() {
     setIngredients(ingredientsText);
     const response = await fetch('/api/match', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ 
-        ingredients: ingredientsText.split('\n')
+        ingredients: ingredientsText.split('\n'),
+        recipeSlug: recipeSlug || undefined
       }),
     });
     if (!response.ok) {
@@ -149,6 +155,23 @@ export default function Match() {
             </div>
             
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <div>
+                <label htmlFor="recipeSlug" className="block text-sm font-medium mb-1 text-gray-700">
+                  Recipe Slug (optional, for caching):
+                </label>
+                <input
+                  id="recipeSlug"
+                  name="recipeSlug"
+                  type="text"
+                  placeholder="e.g., rice-bowl-med-misobagt-aubergine"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                  value={recipeSlug}
+                  onChange={(e) => setRecipeSlug(e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Provide a unique slug to cache results for this recipe (1 month TTL)
+                </p>
+              </div>
               <div>
                 <label htmlFor="ingredients" className="block text-sm font-medium mb-1 text-gray-700">
                   Ingredients (one per line):
