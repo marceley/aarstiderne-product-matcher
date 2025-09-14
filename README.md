@@ -34,6 +34,8 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/scrape
 curl https://aarstiderne-product-matcher.vercel.app/api/scrape
 ```
 
+## Hard reset main to older commit 
+
 - Matching API example:
 
 ```bash
