@@ -25,25 +25,13 @@ export async function action({ request }: ActionFunctionArgs) {
     if (cached) {
       console.log(`[PROD-MATCH] Cache hit for recipe ${recipeSlug} (${cached.hit_count + 1} hits)`);
       
-      // Transform cached results to extract only product IDs with score > 95%
-      const productIds: number[] = [];
-      if (Array.isArray(cached.results)) {
-        for (const result of cached.results) {
-          if (result && typeof result === 'object' && 'matches' in result && Array.isArray(result.matches)) {
-            // Get the first (best) match and extract its ID only if score > 95%
-            const bestMatch = result.matches[0];
-            if (bestMatch && typeof bestMatch === 'object' && 'id' in bestMatch && 'score' in bestMatch) {
-              const score = typeof bestMatch.score === 'number' ? bestMatch.score : 0;
-              if (score >= 0.95) { // 95% threshold
-                const productId = parseInt(bestMatch.id as string, 10);
-                if (!isNaN(productId)) {
-                  productIds.push(productId);
-                }
-              }
-            }
-          }
-        }
-      }
+      // Transform cached results to extract only product IDs with score >= 95%
+      const productIds = (cached.results as any[])
+        ?.filter(result => result?.matches?.[0])
+        ?.map(result => result.matches[0])
+        ?.filter(match => match.score >= 0.95)
+        ?.map(match => parseInt(match.id, 10))
+        ?.filter(id => !isNaN(id)) || [];
       
       return new Response(JSON.stringify(productIds), {
         headers: {
