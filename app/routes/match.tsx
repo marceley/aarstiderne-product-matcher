@@ -22,10 +22,29 @@ export default function Match() {
   const [ingredients, setIngredients] = useState("løg\nsquash\ningefær\nghee/smør\nmadraskarry\nkikærtemel\nsødmælksyoghurt\nvinterspinat eller anden frisk spinat\nhel spidskommen\nkorianderfrø\nsennepsfrø\nsesamfrø\nnigellafrø");
   const [recipeUrl, setRecipeUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
+  const [recipeSlug, setRecipeSlug] = useState("");
+
+  // Function to extract slug from URL
+  const extractSlugFromUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/').filter(part => part.length > 0);
+      // Get the last part of the path as the slug, use as-is
+      return pathParts[pathParts.length - 1] || '';
+    } catch {
+      return '';
+    }
+  };
 
   const handleRecipeExtract = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!recipeUrl.trim()) return;
+    
+    // Extract slug from URL and set it
+    const extractedSlug = extractSlugFromUrl(recipeUrl);
+    if (extractedSlug) {
+      setRecipeSlug(extractedSlug);
+    }
     
     setExtracting(true);
     try {
@@ -57,7 +76,8 @@ export default function Match() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-              ingredients: data.ingredients
+              ingredients: data.ingredients,
+              recipeSlug: recipeSlug || extractedSlug || undefined
             }),
           });
           
@@ -92,8 +112,12 @@ export default function Match() {
     setIngredients(ingredientsText);
     const response = await fetch('/api/match', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ 
-        ingredients: ingredientsText.split('\n')
+        ingredients: ingredientsText.split('\n'),
+        recipeSlug: recipeSlug || undefined
       }),
     });
     if (!response.ok) {
@@ -133,7 +157,14 @@ export default function Match() {
                 <input
                   type="url"
                   value={recipeUrl}
-                  onChange={(e) => setRecipeUrl(e.target.value)}
+                  onChange={(e) => {
+                    setRecipeUrl(e.target.value);
+                    // Auto-extract slug from URL as user types
+                    const extractedSlug = extractSlugFromUrl(e.target.value);
+                    if (extractedSlug) {
+                      setRecipeSlug(extractedSlug);
+                    }
+                  }}
                   placeholder="https://example.com/recipe"
                   className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
                   disabled={extracting}
@@ -149,6 +180,24 @@ export default function Match() {
             </div>
             
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <div>
+                <label htmlFor="recipeSlug" className="block text-sm font-medium mb-1 text-gray-700">
+                  Recipe Slug (optional, for caching):
+                </label>
+                <input
+                  id="recipeSlug"
+                  name="recipeSlug"
+                  type="text"
+                  placeholder="e.g., rice-bowl-med-misobagt-aubergine"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                  value={recipeSlug}
+                  onChange={(e) => setRecipeSlug(e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Provide a unique slug to cache results for this recipe (1 month TTL). 
+                  <br />Slug is automatically extracted from recipe URLs above.
+                </p>
+              </div>
               <div>
                 <label htmlFor="ingredients" className="block text-sm font-medium mb-1 text-gray-700">
                   Ingredients (one per line):

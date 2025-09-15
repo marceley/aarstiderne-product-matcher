@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
 import { pool } from "../utils/db";
 import { getEmbeddings } from "../utils/embeddings";
+import { getCachedRecipe, setCachedRecipe } from "../utils/recipe-cache";
 
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
@@ -13,8 +14,24 @@ export async function action({ request }: ActionFunctionArgs) {
   const body = await request.json();
   const ingredients = (body?.ingredients ?? []) as string[];
   const instructions = body?.instructions as string | undefined;
+  const recipeSlug = body?.recipeSlug as string | undefined;
   if (!Array.isArray(ingredients) || ingredients.length === 0) {
     return new Response("Bad Request", { status: 400 });
+  }
+
+  // Check recipe cache if recipeSlug is provided
+  if (recipeSlug) {
+    const cached = await getCachedRecipe(recipeSlug);
+    if (cached) {
+      console.log(`[PROD-MATCH] Cache hit for recipe ${recipeSlug} (${cached.hit_count + 1} hits)`);
+      return new Response(JSON.stringify(cached.results), {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Cache': 'HIT',
+          'X-Cache-Hits': cached.hit_count.toString(),
+        },
+      });
+    }
   }
 
   const embeddingStart = Date.now();
@@ -72,10 +89,25 @@ export async function action({ request }: ActionFunctionArgs) {
     
     console.log(`[PROD-MATCH] Database query took ${Date.now() - dbStart}ms`);
     
+    // Cache the results if recipeSlug is provided
+    if (recipeSlug) {
+      try {
+        await setCachedRecipe(recipeSlug, productIds);
+        console.log(`[PROD-MATCH] Cached results for recipe ${recipeSlug}`);
+      } catch (error) {
+        console.error(`[PROD-MATCH] Failed to cache results for recipe ${recipeSlug}:`, error);
+      }
+    }
+    
     const totalTime = Date.now() - startTime;
     console.log(`[PROD-MATCH] Total request time: ${totalTime}ms, returning ${productIds.length} product IDs`);
     
-    return Response.json(productIds);
+    return new Response(JSON.stringify(productIds), {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Cache': 'MISS',
+      },
+    });
     
   } finally {
     client.release();
