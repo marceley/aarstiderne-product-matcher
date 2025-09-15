@@ -1,22 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-// Types generated from the example JSON response
-type MatchResult = {
-  ingredient: string;
-  matches: {
-    id: string;
-    title: string;
-    title_original: string;
-    score: number;
-  }[];
-};
+type ProductionApiResponse = number[];
 
-type MatchApiResponse = {
-  results: MatchResult[];
-};
-
-export default function Match() {
-  const [matches, setMatches] = useState<MatchApiResponse>();
+export default function TestProduction() {
+  const [results, setResults] = useState<ProductionApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ingredients, setIngredients] = useState("");
@@ -66,11 +53,11 @@ export default function Match() {
         setIngredients(ingredientsText);
         setRecipeUrl(""); // Clear the URL field
         
-        // Automatically run the matching after successful extraction
+        // Automatically run the production matching after successful extraction
         setLoading(true);
         setError(null);
         try {
-          const matchResponse = await fetch('/api/match', {
+          const matchResponse = await fetch('/api/match-production', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -86,9 +73,9 @@ export default function Match() {
           }
           
           const matchData = await matchResponse.json();
-          setMatches(matchData);
+          setResults(matchData);
         } catch (matchError) {
-          console.error('Match error:', matchError);
+          console.error('Production match error:', matchError);
           setError(matchError instanceof Error ? matchError.message : 'Failed to find matches');
         } finally {
           setLoading(false);
@@ -107,39 +94,58 @@ export default function Match() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     const formData = new FormData(e.target as HTMLFormElement);
     const ingredientsText = formData.get('ingredients') as string;
     setIngredients(ingredientsText);
-    const response = await fetch('/api/match', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        ingredients: ingredientsText.split('\n'),
-        recipeSlug: recipeSlug || undefined
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    
+    try {
+      const response = await fetch('/api/match-production', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          ingredients: ingredientsText.split('\n'),
+          recipeSlug: recipeSlug || undefined
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setResults(data);
+    } catch (error) {
+      console.error('Production match error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to find matches');
+    } finally {
+      setLoading(false);
     }
-    const data = await response.json();
-    setMatches(data);
-    setLoading(false);
   };
 
   if (error) {
     return (
       <div style={{ padding: 16 }}>
-        <h1>Matches</h1>
+        <h1>Production API Test</h1>
         <p style={{ color: 'red' }}>Error: {error}</p>
+        <button 
+          onClick={() => setError(null)}
+          className="bg-blue-500 text-white py-2 px-3 rounded-md hover:bg-blue-600 transition-colors font-medium text-sm mt-2"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Product Matcher</h1>
+      <h1 className="text-xl font-bold mb-4">Production API Test</h1>
+      <p className="text-sm text-gray-600 mb-6">
+        Test the <code>/api/match-production</code> endpoint that returns only product IDs for production use.
+      </p>
       
       <div className="flex gap-6">
         {/* Left Column - Form */}
@@ -182,12 +188,13 @@ export default function Match() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div>
                 <label htmlFor="recipeSlug" className="block text-sm font-medium mb-1 text-gray-700">
-                  Recipe Slug (used as the key for caching):
+                  Recipe Slug (optional, for caching):
                 </label>
                 <input
                   id="recipeSlug"
                   name="recipeSlug"
                   type="text"
+                  placeholder="e.g., rice-bowl-med-misobagt-aubergine"
                   className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 text-sm"
                   value={recipeSlug}
                   readOnly
@@ -214,7 +221,7 @@ export default function Match() {
                 type="submit" 
                 className="bg-blue-500 text-white py-2 px-3 rounded-md hover:bg-blue-600 transition-colors font-medium text-sm"
               >
-                Find Matches
+                Test Production API
               </button>
             </form>
           </div>
@@ -223,68 +230,39 @@ export default function Match() {
         {/* Right Column - Results */}
         <div className="w-1/2">
           <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
-            <h2 className="text-base font-semibold mb-3">Results</h2>
+            <h2 className="text-base font-semibold mb-3">Production Results</h2>
             {loading ? (
               <div className="flex items-center justify-center flex-1">
-                <div className="text-gray-500 text-sm">Loading matches...</div>
+                <div className="text-gray-500 text-sm">Loading production matches...</div>
               </div>
-            ) : matches?.results && matches.results.length > 0 ? (
-              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                <div className="p-2 bg-gray-50 rounded text-sm mb-3 sticky top-0 z-10">
-                  {(() => {
-                    const topScoreCount = matches.results.filter(match => 
-                      match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= 95
-                    ).length;
-                    const totalIngredients = matches.results.length;
-                    return `${topScoreCount} of ${totalIngredients} ingredients found excellent matches (95%+)`;
-                  })()}
+            ) : results && results.length > 0 ? (
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-2 bg-gray-50 rounded text-sm mb-3">
+                  Found {results.length} product IDs for production use
                 </div>
-                  {matches.results.map((match) => (
-                  <div key={match.ingredient} className="border-b border-gray-200 pb-3 last:border-b-0">
-                    <h3 className="font-semibold text-base text-gray-800 mb-2">{match.ingredient}</h3>
-                    <div className="space-y-1">
-                      {match.matches.map((m, index) => {
-                        const scorePercent = Math.round(m.score * 100);
-                        let bgColor = 'bg-gray-50';
-                        let textColor = 'text-gray-600';
-                        let borderColor = 'border-gray-300';
-                        
-                        if (scorePercent >= 95) {
-                          bgColor = 'bg-green-50';
-                          textColor = 'text-green-700';
-                          borderColor = 'border-green-300';
-                        } else if (scorePercent >= 90) {
-                          bgColor = 'bg-yellow-50';
-                          textColor = 'text-yellow-700';
-                          borderColor = 'border-yellow-300';
-                        } else {
-                          bgColor = 'bg-red-50';
-                          textColor = 'text-red-700';
-                          borderColor = 'border-red-300';
-                        }
-                        
-                        return (
-                          <div key={m.id} className={`flex items-center justify-between p-2 ${bgColor} rounded-md border-l-4 ${borderColor}`}>
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900 text-sm">{m.title}</div>
-                              {m.title_original && m.title_original !== m.title && (
-                                <div className="text-xs text-gray-500 italic">Original: {m.title_original}</div>
-                              )}
-                              <div className="text-xs text-gray-500">ID: {m.id}</div>
-                            </div>
-                            <div className={`text-xs font-medium ${textColor}`}>
-                              {scorePercent}%
-                            </div>
-                          </div>
-                        );
-                      })}
+                <div className="space-y-2">
+                  {results.map((productId, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded-md border-l-4 border-blue-300">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 text-sm">Product ID: {productId}</div>
+                        <div className="text-xs text-gray-500">Index: {index}</div>
+                      </div>
+                      <div className="text-xs font-medium text-blue-700">
+                        #{index + 1}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                  <strong>Raw JSON Response:</strong>
+                  <pre className="mt-1 text-xs overflow-x-auto">
+                    {JSON.stringify(results, null, 2)}
+                  </pre>
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
-                Enter ingredients and click "Find Matches" to see results
+                Enter ingredients and click "Test Production API" to see results
               </div>
             )}
           </div>
@@ -293,5 +271,3 @@ export default function Match() {
     </div>
   );
 }
-
-

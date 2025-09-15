@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
 import { pool } from "../utils/db";
 import { getEmbeddings } from "../utils/embeddings";
+import { getCachedRecipe, setCachedRecipe } from "../utils/recipe-cache";
 
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
@@ -13,8 +14,33 @@ export async function action({ request }: ActionFunctionArgs) {
   const body = await request.json();
   const ingredients = (body?.ingredients ?? []) as string[];
   const instructions = body?.instructions as string | undefined;
+  const recipeSlug = body?.recipeSlug as string | undefined;
   if (!Array.isArray(ingredients) || ingredients.length === 0) {
     return new Response("Bad Request", { status: 400 });
+  }
+
+  // Check recipe cache if recipeSlug is provided
+  if (recipeSlug) {
+    const cached = await getCachedRecipe(recipeSlug);
+    if (cached) {
+      console.log(`[PROD-MATCH] Cache hit for recipe ${recipeSlug} (${cached.hit_count + 1} hits)`);
+      
+      // Transform cached results to extract only product IDs with score >= 95%
+      const productIds = (cached.results as any[])
+        ?.filter(result => result?.matches?.[0])
+        ?.map(result => result.matches[0])
+        ?.filter(match => match.score >= 0.95)
+        ?.map(match => parseInt(match.id, 10))
+        ?.filter(id => !isNaN(id)) || [];
+      
+      return new Response(JSON.stringify(productIds), {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Cache': 'HIT',
+          'X-Cache-Hits': cached.hit_count.toString(),
+        },
+      });
+    }
   }
 
   const embeddingStart = Date.now();
@@ -37,7 +63,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json([]);
     }
     
-    // Single optimized query - get only the best match per ingredient
+    // Single optimized query - get only the best match per ingredient with score > 95%
     const unionQueries = validEmbeddings.map(({ embedding, index }) => {
       const embLiteral = `[${embedding.join(",")}]`;
       return `(
@@ -46,6 +72,7 @@ export async function action({ request }: ActionFunctionArgs) {
                1 - (embedding <=> '${embLiteral}'::vector) AS score
         FROM products
         WHERE embedding IS NOT NULL AND pimid IS NOT NULL AND pimid ~ '^[0-9]+$'
+          AND 1 - (embedding <=> '${embLiteral}'::vector) >= 0.95
         ORDER BY embedding <-> '${embLiteral}'::vector
         LIMIT 1
       )`;
@@ -72,10 +99,17 @@ export async function action({ request }: ActionFunctionArgs) {
     
     console.log(`[PROD-MATCH] Database query took ${Date.now() - dbStart}ms`);
     
+    // Note: We don't cache production results separately since we can transform from regular cache
+    
     const totalTime = Date.now() - startTime;
     console.log(`[PROD-MATCH] Total request time: ${totalTime}ms, returning ${productIds.length} product IDs`);
     
-    return Response.json(productIds);
+    return new Response(JSON.stringify(productIds), {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Cache': 'MISS',
+      },
+    });
     
   } finally {
     client.release();
