@@ -6,7 +6,7 @@ export default function TestProduction() {
   const [results, setResults] = useState<ProductionApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ingredients, setIngredients] = useState("løg\nsquash\ningefær\nghee/smør\nmadraskarry\nkikærtemel\nsødmælksyoghurt\nvinterspinat eller anden frisk spinat\nhel spidskommen\nkorianderfrø\nsennepsfrø\nsesamfrø\nnigellafrø");
+  const [ingredients, setIngredients] = useState("");
   const [recipeUrl, setRecipeUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [recipeSlug, setRecipeSlug] = useState("");

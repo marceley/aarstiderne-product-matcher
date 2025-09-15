@@ -19,7 +19,7 @@ export default function Match() {
   const [matches, setMatches] = useState<MatchApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ingredients, setIngredients] = useState("løg\nsquash\ningefær\nghee/smør\nmadraskarry\nkikærtemel\nsødmælksyoghurt\nvinterspinat eller anden frisk spinat\nhel spidskommen\nkorianderfrø\nsennepsfrø\nsesamfrø\nnigellafrø");
+  const [ingredients, setIngredients] = useState("");
   const [recipeUrl, setRecipeUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [recipeSlug, setRecipeSlug] = useState("");
@@ -182,7 +182,7 @@ export default function Match() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div>
                 <label htmlFor="recipeSlug" className="block text-sm font-medium mb-1 text-gray-700">
-                  Recipe Slug (optional, for caching):
+                  Recipe Slug (used as the key for caching):
                 </label>
                 <input
                   id="recipeSlug"
