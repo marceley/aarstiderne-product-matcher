@@ -188,14 +188,12 @@ export default function Match() {
                   id="recipeSlug"
                   name="recipeSlug"
                   type="text"
-                  placeholder="e.g., rice-bowl-med-misobagt-aubergine"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 text-sm"
                   value={recipeSlug}
-                  onChange={(e) => setRecipeSlug(e.target.value)}
+                  readOnly
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Provide a unique slug to cache results for this recipe (1 month TTL). 
-                  <br />Slug is automatically extracted from recipe URLs above.
+                  Slug is automatically extracted from recipe URLs above for caching (1 month TTL).
                 </p>
               </div>
               <div>
