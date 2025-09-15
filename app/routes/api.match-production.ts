@@ -24,7 +24,28 @@ export async function action({ request }: ActionFunctionArgs) {
     const cached = await getCachedRecipe(recipeSlug);
     if (cached) {
       console.log(`[PROD-MATCH] Cache hit for recipe ${recipeSlug} (${cached.hit_count + 1} hits)`);
-      return new Response(JSON.stringify(cached.results), {
+      
+      // Transform cached results to extract only product IDs with score > 95%
+      const productIds: number[] = [];
+      if (Array.isArray(cached.results)) {
+        for (const result of cached.results) {
+          if (result && typeof result === 'object' && 'matches' in result && Array.isArray(result.matches)) {
+            // Get the first (best) match and extract its ID only if score > 95%
+            const bestMatch = result.matches[0];
+            if (bestMatch && typeof bestMatch === 'object' && 'id' in bestMatch && 'score' in bestMatch) {
+              const score = typeof bestMatch.score === 'number' ? bestMatch.score : 0;
+              if (score >= 0.95) { // 95% threshold
+                const productId = parseInt(bestMatch.id as string, 10);
+                if (!isNaN(productId)) {
+                  productIds.push(productId);
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      return new Response(JSON.stringify(productIds), {
         headers: {
           'Content-Type': 'application/json',
           'X-Cache': 'HIT',
@@ -54,7 +75,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json([]);
     }
     
-    // Single optimized query - get only the best match per ingredient
+    // Single optimized query - get only the best match per ingredient with score > 95%
     const unionQueries = validEmbeddings.map(({ embedding, index }) => {
       const embLiteral = `[${embedding.join(",")}]`;
       return `(
@@ -63,6 +84,7 @@ export async function action({ request }: ActionFunctionArgs) {
                1 - (embedding <=> '${embLiteral}'::vector) AS score
         FROM products
         WHERE embedding IS NOT NULL AND pimid IS NOT NULL AND pimid ~ '^[0-9]+$'
+          AND 1 - (embedding <=> '${embLiteral}'::vector) >= 0.95
         ORDER BY embedding <-> '${embLiteral}'::vector
         LIMIT 1
       )`;
@@ -89,15 +111,7 @@ export async function action({ request }: ActionFunctionArgs) {
     
     console.log(`[PROD-MATCH] Database query took ${Date.now() - dbStart}ms`);
     
-    // Cache the results if recipeSlug is provided
-    if (recipeSlug) {
-      try {
-        await setCachedRecipe(recipeSlug, productIds);
-        console.log(`[PROD-MATCH] Cached results for recipe ${recipeSlug}`);
-      } catch (error) {
-        console.error(`[PROD-MATCH] Failed to cache results for recipe ${recipeSlug}:`, error);
-      }
-    }
+    // Note: We don't cache production results separately since we can transform from regular cache
     
     const totalTime = Date.now() - startTime;
     console.log(`[PROD-MATCH] Total request time: ${totalTime}ms, returning ${productIds.length} product IDs`);
