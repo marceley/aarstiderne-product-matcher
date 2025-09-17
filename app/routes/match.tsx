@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
 
 // Types generated from the example JSON response
 type MatchResult = {
@@ -15,7 +17,14 @@ type MatchApiResponse = {
   results: MatchResult[];
 };
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  return {
+    excellentThreshold: parseInt(process.env.EXCELLENT_MATCH_THRESHOLD || "95", 10)
+  };
+}
+
 export default function Match() {
+  const { excellentThreshold } = useLoaderData<typeof loader>();
   const [matches, setMatches] = useState<MatchApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -321,11 +330,11 @@ export default function Match() {
         <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
             <h2 className="text-base font-semibold mb-3">
-              Fremragende Matches (95%+)
+              Fremragende Matches ({excellentThreshold}%+)
               {matches?.results && (
                 <span className="text-sm font-normal text-gray-600 ml-2">
                   ({matches.results.filter(match => 
-                    match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= 95
+                    match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= excellentThreshold
                   ).length} af {matches.results.length} ingredienser)
                 </span>
               )}
@@ -338,7 +347,7 @@ export default function Match() {
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 {(() => {
                   const highConfidenceResults = matches.results.filter(match => 
-                    match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= 95
+                    match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= excellentThreshold
                   );
 
                   const renderMatchItem = (m: any, index: number) => {
@@ -347,7 +356,7 @@ export default function Match() {
                     let textColor = 'text-gray-600';
                     let borderColor = 'border-gray-300';
                     
-                    if (scorePercent >= 95) {
+                    if (scorePercent >= excellentThreshold) {
                       bgColor = 'bg-green-50';
                       textColor = 'text-green-700';
                       borderColor = 'border-green-300';
@@ -382,7 +391,7 @@ export default function Match() {
                     const hasMultipleMatches = match.matches.length > 1;
                     const visibleMatches = isExpanded ? match.matches : match.matches.slice(0, 1);
                     const topScore = match.matches.length > 0 ? Math.round(match.matches[0].score * 100) : 0;
-                    const needsImprovement = topScore < 95;
+                    const needsImprovement = topScore < excellentThreshold;
                     const suggestions = needsImprovement ? generateSuggestions(match.ingredient) : [];
                     const hasSuggestions = suggestions.length > 0;
                     const isShowingSuggestions = showingSuggestions.has(match.ingredient);
@@ -440,7 +449,7 @@ export default function Match() {
                   } else {
                     return (
                       <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
-                        Ingen fremragende matches (95%+) fundet
+                        Ingen fremragende matches ({excellentThreshold}%+) fundet
                       </div>
                     );
                   }
@@ -458,11 +467,11 @@ export default function Match() {
         <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
             <h2 className="text-base font-semibold mb-3">
-              Andre Matches (&lt;95%)
+              Andre Matches (&lt;{excellentThreshold}%)
               {matches?.results && (
                 <span className="text-sm font-normal text-gray-600 ml-2">
                   ({matches.results.filter(match => 
-                    match.matches.length === 0 || Math.round(match.matches[0].score * 100) < 95
+                    match.matches.length === 0 || Math.round(match.matches[0].score * 100) < excellentThreshold
                   ).length} af {matches.results.length} ingredienser)
                 </span>
               )}
@@ -475,7 +484,7 @@ export default function Match() {
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 {(() => {
                   const lowerConfidenceResults = matches.results.filter(match => 
-                    match.matches.length === 0 || Math.round(match.matches[0].score * 100) < 95
+                    match.matches.length === 0 || Math.round(match.matches[0].score * 100) < excellentThreshold
                   );
 
                   const renderMatchItem = (m: any, index: number) => {
@@ -484,7 +493,7 @@ export default function Match() {
                     let textColor = 'text-gray-600';
                     let borderColor = 'border-gray-300';
                     
-                    if (scorePercent >= 95) {
+                    if (scorePercent >= excellentThreshold) {
                       bgColor = 'bg-green-50';
                       textColor = 'text-green-700';
                       borderColor = 'border-green-300';
@@ -519,7 +528,7 @@ export default function Match() {
                     const hasMultipleMatches = match.matches.length > 1;
                     const visibleMatches = isExpanded ? match.matches : match.matches.slice(0, 1);
                     const topScore = match.matches.length > 0 ? Math.round(match.matches[0].score * 100) : 0;
-                    const needsImprovement = topScore < 95;
+                    const needsImprovement = topScore < excellentThreshold;
                     const suggestions = needsImprovement ? generateSuggestions(match.ingredient) : [];
                     const hasSuggestions = suggestions.length > 0;
                     const isShowingSuggestions = showingSuggestions.has(match.ingredient);
@@ -577,7 +586,7 @@ export default function Match() {
                   } else {
                     return (
                       <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
-                        Alle matches er fremragende (95%+)
+                        Alle matches er fremragende ({excellentThreshold}%+)
                       </div>
                     );
                   }
