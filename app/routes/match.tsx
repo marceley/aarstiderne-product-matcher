@@ -23,6 +23,7 @@ export default function Match() {
   const [recipeUrl, setRecipeUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [recipeSlug, setRecipeSlug] = useState("");
+  const [expandedIngredients, setExpandedIngredients] = useState<Set<string>>(new Set());
 
   // Function to extract slug from URL
   const extractSlugFromUrl = (url: string): string => {
@@ -34,6 +35,17 @@ export default function Match() {
     } catch {
       return '';
     }
+  };
+
+  // Function to toggle expanded state for an ingredient
+  const toggleExpanded = (ingredient: string) => {
+    const newExpanded = new Set(expandedIngredients);
+    if (newExpanded.has(ingredient)) {
+      newExpanded.delete(ingredient);
+    } else {
+      newExpanded.add(ingredient);
+    }
+    setExpandedIngredients(newExpanded);
   };
 
   const handleRecipeExtract = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -148,12 +160,12 @@ export default function Match() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
+    <div className="w-full px-6 py-4">
       <h1 className="text-xl font-bold mb-4">Product Matcher</h1>
       
       <div className="flex gap-6">
         {/* Left Column - Form */}
-        <div className="w-1/2">
+        <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border">
             <h2 className="text-base font-semibold mb-3">Ingredients</h2>
             
@@ -233,67 +245,201 @@ export default function Match() {
           </div>
         </div>
 
-        {/* Right Column - Results */}
-        <div className="w-1/2">
+        {/* Middle Column - High Confidence Results (>=95%) */}
+        <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
-            <h2 className="text-base font-semibold mb-3">Results</h2>
+            <h2 className="text-base font-semibold mb-3">Excellent Matches (95%+)</h2>
             {loading ? (
               <div className="flex items-center justify-center flex-1">
                 <div className="text-gray-500 text-sm">Loading matches...</div>
               </div>
             ) : matches?.results && matches.results.length > 0 ? (
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                <div className="p-2 bg-gray-50 rounded text-sm mb-3 sticky top-0 z-10">
-                  {(() => {
-                    const topScoreCount = matches.results.filter(match => 
-                      match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= 95
-                    ).length;
-                    const totalIngredients = matches.results.length;
-                    return `${topScoreCount} of ${totalIngredients} ingredients found excellent matches (95%+)`;
-                  })()}
-                </div>
-                  {matches.results.map((match) => (
-                  <div key={match.ingredient} className="border-b border-gray-200 pb-3 last:border-b-0">
-                    <h3 className="font-semibold text-base text-gray-800 mb-2">{match.ingredient}</h3>
-                    <div className="space-y-1">
-                      {match.matches.map((m, index) => {
-                        const scorePercent = Math.round(m.score * 100);
-                        let bgColor = 'bg-gray-50';
-                        let textColor = 'text-gray-600';
-                        let borderColor = 'border-gray-300';
-                        
-                        if (scorePercent >= 95) {
-                          bgColor = 'bg-green-50';
-                          textColor = 'text-green-700';
-                          borderColor = 'border-green-300';
-                        } else if (scorePercent >= 90) {
-                          bgColor = 'bg-yellow-50';
-                          textColor = 'text-yellow-700';
-                          borderColor = 'border-yellow-300';
-                        } else {
-                          bgColor = 'bg-red-50';
-                          textColor = 'text-red-700';
-                          borderColor = 'border-red-300';
-                        }
-                        
-                        return (
-                          <div key={m.id} className={`flex items-center justify-between p-2 ${bgColor} rounded-md border-l-4 ${borderColor}`}>
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900 text-sm">{m.title}</div>
-                              {m.title_original && m.title_original !== m.title && (
-                                <div className="text-xs text-gray-500 italic">Original: {m.title_original}</div>
-                              )}
-                              <div className="text-xs text-gray-500">ID: {m.id}</div>
+                {(() => {
+                  const highConfidenceResults = matches.results.filter(match => 
+                    match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= 95
+                  );
+
+                  const renderMatchItem = (m: any, index: number) => {
+                    const scorePercent = Math.round(m.score * 100);
+                    let bgColor = 'bg-gray-50';
+                    let textColor = 'text-gray-600';
+                    let borderColor = 'border-gray-300';
+                    
+                    if (scorePercent >= 95) {
+                      bgColor = 'bg-green-50';
+                      textColor = 'text-green-700';
+                      borderColor = 'border-green-300';
+                    } else if (scorePercent >= 90) {
+                      bgColor = 'bg-yellow-50';
+                      textColor = 'text-yellow-700';
+                      borderColor = 'border-yellow-300';
+                    } else {
+                      bgColor = 'bg-red-50';
+                      textColor = 'text-red-700';
+                      borderColor = 'border-red-300';
+                    }
+                    
+                    return (
+                      <div key={m.id} className={`flex items-center justify-between p-2 ${bgColor} rounded-md border-l-4 ${borderColor}`}>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 text-sm">{m.title}</div>
+                          {m.title_original && m.title_original !== m.title && (
+                            <div className="text-xs text-gray-500 italic">Original: {m.title_original}</div>
+                          )}
+                          <div className="text-xs text-gray-500">ID: {m.id}</div>
+                        </div>
+                        <div className={`text-xs font-medium ${textColor}`}>
+                          {scorePercent}%
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  const renderMatchSection = (match: any) => {
+                    const isExpanded = expandedIngredients.has(match.ingredient);
+                    const hasMultipleMatches = match.matches.length > 1;
+                    const visibleMatches = isExpanded ? match.matches : match.matches.slice(0, 1);
+                    
+                    return (
+                      <div key={match.ingredient} className="border-b border-gray-200 pb-3 last:border-b-0">
+                        <h3 className="font-semibold text-base text-gray-800 mb-2">{match.ingredient}</h3>
+                        <div className="space-y-1">
+                          {visibleMatches.map((m: any, index: number) => renderMatchItem(m, index))}
+                          {hasMultipleMatches && (
+                            <div className="flex justify-end mt-2">
+                              <button
+                                onClick={() => toggleExpanded(match.ingredient)}
+                                className="text-xs text-gray-600 hover:text-gray-800 font-medium cursor-pointer"
+                              >
+                                {isExpanded ? 'Show less' : `Show ${match.matches.length - 1} more`}
+                              </button>
                             </div>
-                            <div className={`text-xs font-medium ${textColor}`}>
-                              {scorePercent}%
+                          )}
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  if (highConfidenceResults.length > 0) {
+                    return (
+                      <>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 sticky top-0 z-10 bg-white py-2">
+                          {highConfidenceResults.length} of {matches.results.length} ingredients found excellent matches
+                        </h3>
+                        {highConfidenceResults.map(renderMatchSection)}
+                      </>
+                    );
+                  } else {
+                    return (
+                      <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
+                        No excellent matches (95%+) found
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
+                Enter ingredients and click "Find Matches" to see results
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column - Lower Confidence Results (<95%) */}
+        <div className="flex-1">
+          <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
+            <h2 className="text-base font-semibold mb-3">Other Matches (&lt;95%)</h2>
+            {loading ? (
+              <div className="flex items-center justify-center flex-1">
+                <div className="text-gray-500 text-sm">Loading matches...</div>
+              </div>
+            ) : matches?.results && matches.results.length > 0 ? (
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                {(() => {
+                  const lowerConfidenceResults = matches.results.filter(match => 
+                    match.matches.length === 0 || Math.round(match.matches[0].score * 100) < 95
+                  );
+
+                  const renderMatchItem = (m: any, index: number) => {
+                    const scorePercent = Math.round(m.score * 100);
+                    let bgColor = 'bg-gray-50';
+                    let textColor = 'text-gray-600';
+                    let borderColor = 'border-gray-300';
+                    
+                    if (scorePercent >= 95) {
+                      bgColor = 'bg-green-50';
+                      textColor = 'text-green-700';
+                      borderColor = 'border-green-300';
+                    } else if (scorePercent >= 90) {
+                      bgColor = 'bg-yellow-50';
+                      textColor = 'text-yellow-700';
+                      borderColor = 'border-yellow-300';
+                    } else {
+                      bgColor = 'bg-red-50';
+                      textColor = 'text-red-700';
+                      borderColor = 'border-red-300';
+                    }
+                    
+                    return (
+                      <div key={m.id} className={`flex items-center justify-between p-2 ${bgColor} rounded-md border-l-4 ${borderColor}`}>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 text-sm">{m.title}</div>
+                          {m.title_original && m.title_original !== m.title && (
+                            <div className="text-xs text-gray-500 italic">Original: {m.title_original}</div>
+                          )}
+                          <div className="text-xs text-gray-500">ID: {m.id}</div>
+                        </div>
+                        <div className={`text-xs font-medium ${textColor}`}>
+                          {scorePercent}%
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  const renderMatchSection = (match: any) => {
+                    const isExpanded = expandedIngredients.has(match.ingredient);
+                    const hasMultipleMatches = match.matches.length > 1;
+                    const visibleMatches = isExpanded ? match.matches : match.matches.slice(0, 1);
+                    
+                    return (
+                      <div key={match.ingredient} className="border-b border-gray-200 pb-3 last:border-b-0">
+                        <h3 className="font-semibold text-base text-gray-800 mb-2">{match.ingredient}</h3>
+                        <div className="space-y-1">
+                          {visibleMatches.map((m: any, index: number) => renderMatchItem(m, index))}
+                          {hasMultipleMatches && (
+                            <div className="flex justify-end mt-2">
+                              <button
+                                onClick={() => toggleExpanded(match.ingredient)}
+                                className="text-xs text-gray-600 hover:text-gray-800 font-medium cursor-pointer"
+                              >
+                                {isExpanded ? 'Show less' : `Show ${match.matches.length - 1} more`}
+                              </button>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                          )}
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  if (lowerConfidenceResults.length > 0) {
+                    return (
+                      <>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 sticky top-0 z-10 bg-white py-2">
+                          {lowerConfidenceResults.length} ingredients with lower confidence matches
+                        </h3>
+                        {lowerConfidenceResults.map(renderMatchSection)}
+                      </>
+                    );
+                  } else {
+                    return (
+                      <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
+                        All matches are excellent (95%+)
+                      </div>
+                    );
+                  }
+                })()}
               </div>
             ) : (
               <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
