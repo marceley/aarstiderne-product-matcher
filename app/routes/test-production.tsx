@@ -1,6 +1,20 @@
 import { useState } from "react";
 
-type ProductionApiResponse = number[];
+type ProductionApiResponse = {
+  status: string;
+  totalIngredients: number;
+  matchedIngredients: number;
+  unmatchedIngredients: number;
+  threshold: number;
+  cacheHit: boolean;
+  productIds: number[];
+  details: {
+    ingredient: string;
+    matched: boolean;
+    productId: number | null;
+    score: number;
+  }[];
+};
 
 export default function TestProduction() {
   const [results, setResults] = useState<ProductionApiResponse>();
@@ -51,7 +65,7 @@ export default function TestProduction() {
       if (data.ingredients && data.ingredients.length > 0) {
         const ingredientsText = data.ingredients.join('\n');
         setIngredients(ingredientsText);
-        setRecipeUrl(""); // Clear the URL field
+        // Keep the URL in the field instead of clearing it
         
         // Automatically run the production matching after successful extraction
         setLoading(true);
@@ -106,8 +120,8 @@ export default function TestProduction() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          ingredients: ingredientsText.split('\n'),
-          recipeSlug: recipeSlug || undefined
+          ingredients: ingredientsText.split('\n')
+          // Note: Not sending recipeSlug to bypass cache and force fresh search
         }),
       });
       
@@ -235,24 +249,89 @@ export default function TestProduction() {
               <div className="flex items-center justify-center flex-1">
                 <div className="text-gray-500 text-sm">Loading production matches...</div>
               </div>
-            ) : results && results.length > 0 ? (
+            ) : results && results.productIds.length > 0 ? (
               <div className="flex-1 overflow-y-auto">
                 <div className="p-2 bg-gray-50 rounded text-sm mb-3">
-                  Found {results.length} product IDs for production use
+                  <div className="flex justify-between items-center">
+                    <span>Found {results.matchedIngredients} of {results.totalIngredients} ingredients</span>
+                    <span className={`px-2 py-1 rounded text-xs ${results.cacheHit ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {results.cacheHit ? 'Cache Hit' : 'Fresh Search'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Threshold: {results.threshold}% | Matched: {results.matchedIngredients} | Unmatched: {results.unmatchedIngredients}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {results.map((productId, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded-md border-l-4 border-blue-300">
+                
+                <div className="space-y-2 mb-4">
+                  {results.details.map((detail, index) => (
+                    <div key={index} className={`flex items-center justify-between p-2 rounded-md border-l-4 ${
+                      detail.matched 
+                        ? 'bg-green-50 border-green-300' 
+                        : 'bg-red-50 border-red-300'
+                    }`}>
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900 text-sm">Product ID: {productId}</div>
-                        <div className="text-xs text-gray-500">Index: {index}</div>
+                        <div className="font-medium text-gray-900 text-sm">{detail.ingredient}</div>
+                        <div className="text-xs text-gray-500">
+                          {detail.matched 
+                            ? `Product ID: ${detail.productId} | Score: ${Math.round(detail.score * 100)}%`
+                            : `No match found | Score: ${Math.round(detail.score * 100)}%`
+                          }
+                        </div>
                       </div>
-                      <div className="text-xs font-medium text-blue-700">
-                        #{index + 1}
+                      <div className={`text-xs font-medium ${
+                        detail.matched ? 'text-green-700' : 'text-red-700'
+                      }`}>
+                        {detail.matched ? '✓' : '✗'}
                       </div>
                     </div>
                   ))}
                 </div>
+                
+                <div className="p-3 bg-gray-100 rounded text-xs">
+                  <strong>Product IDs for Production:</strong>
+                  <div className="mt-1 text-xs font-mono">
+                    [{results.productIds.join(', ')}]
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                  <strong>Raw JSON Response:</strong>
+                  <pre className="mt-1 text-xs overflow-x-auto">
+                    {JSON.stringify(results, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ) : results && results.productIds.length === 0 ? (
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-2 bg-yellow-50 rounded text-sm mb-3 border-l-4 border-yellow-300">
+                  <div className="flex justify-between items-center">
+                    <span>No matches found for {results.totalIngredients} ingredients</span>
+                    <span className={`px-2 py-1 rounded text-xs ${results.cacheHit ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {results.cacheHit ? 'Cache Hit' : 'Fresh Search'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Threshold: {results.threshold}% | All ingredients below threshold
+                  </div>
+                </div>
+                
+                <div className="space-y-2 mb-4">
+                  {results.details.map((detail, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded-md border-l-4 border-red-300">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 text-sm">{detail.ingredient}</div>
+                        <div className="text-xs text-gray-500">
+                          No match found | Score: {Math.round(detail.score * 100)}%
+                        </div>
+                      </div>
+                      <div className="text-xs font-medium text-red-700">
+                        ✗
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
                 <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
                   <strong>Raw JSON Response:</strong>
                   <pre className="mt-1 text-xs overflow-x-auto">
