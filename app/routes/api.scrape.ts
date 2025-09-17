@@ -36,9 +36,10 @@ function cleanTitle(title: string | null | undefined): string | null {
 
 async function runScrape(): Promise<Response> {
   // Basic auth for external feed
-  const url = "https://productfeed.aarstiderne.com/output/productfeed110.json";
-  // TODO: move to .env
-  const auth = "Basic " + Buffer.from("ProductFeed:Vinter2019").toString("base64");
+  const url = process.env.SCRAPE_FEED_URL || "https://productfeed.aarstiderne.com/output/productfeed110.json";
+  const username = process.env.SCRAPE_AUTH_USERNAME || "ProductFeed";
+  const password = process.env.SCRAPE_AUTH_PASSWORD || "Vinter2019";
+  const auth = "Basic " + Buffer.from(`${username}:${password}`).toString("base64");
 
   await ensureDatabaseSetup();
 
@@ -97,8 +98,8 @@ async function runScrape(): Promise<Response> {
 
   console.log(`Processed ${products.length} products`);
 
-  // Process in batches of 100
-  const batchSize = 100;
+  // Process in configurable batches
+  const batchSize = parseInt(process.env.SCRAPE_BATCH_SIZE || "100", 10);
   const client = await pool.connect();
   
   try {

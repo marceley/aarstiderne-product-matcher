@@ -42,13 +42,14 @@ export async function getCachedRecipe(recipeSlug: string): Promise<CachedRecipe 
 }
 
 /**
- * Store recipe results in cache with 1 month TTL
+ * Store recipe results in cache with configurable TTL
  */
 export async function setCachedRecipe(recipeSlug: string, results: any): Promise<void> {
   const client = await pool.connect();
   try {
     const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + 1); // 1 month TTL
+    const ttlMonths = parseInt(process.env.CACHE_TTL_MONTHS || "1", 10);
+    expiresAt.setMonth(expiresAt.getMonth() + ttlMonths);
     
     await client.sql`
       INSERT INTO recipe_cache (recipe_slug, results, expires_at)

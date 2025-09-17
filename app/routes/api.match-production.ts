@@ -10,6 +10,9 @@ export async function action({ request }: ActionFunctionArgs) {
   
   const startTime = Date.now();
   console.log(`[PROD-MATCH] Starting request at ${new Date().toISOString()}`);
+  
+  // Get threshold from environment variable, default to 95, convert to decimal
+  const productionThreshold = parseFloat(process.env.EXCELLENT_MATCH_THRESHOLD || "95") / 100;
 
   const body = await request.json();
   const ingredients = (body?.ingredients ?? []) as string[];
@@ -29,7 +32,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const productIds = (cached.results as any[])
         ?.filter(result => result?.matches?.[0])
         ?.map(result => result.matches[0])
-        ?.filter(match => match.score >= 0.95)
+        ?.filter(match => match.score >= productionThreshold)
         ?.map(match => parseInt(match.id, 10))
         ?.filter(id => !isNaN(id)) || [];
       
@@ -72,7 +75,7 @@ export async function action({ request }: ActionFunctionArgs) {
                1 - (embedding <=> '${embLiteral}'::vector) AS score
         FROM products
         WHERE embedding IS NOT NULL AND pimid IS NOT NULL AND pimid ~ '^[0-9]+$'
-          AND 1 - (embedding <=> '${embLiteral}'::vector) >= 0.95
+          AND 1 - (embedding <=> '${embLiteral}'::vector) >= ${productionThreshold}
         ORDER BY embedding <-> '${embLiteral}'::vector
         LIMIT 1
       )`;
