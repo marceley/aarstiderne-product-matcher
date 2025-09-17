@@ -107,25 +107,35 @@ export default function Match() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     const formData = new FormData(e.target as HTMLFormElement);
     const ingredientsText = formData.get('ingredients') as string;
     setIngredients(ingredientsText);
-    const response = await fetch('/api/match', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        ingredients: ingredientsText.split('\n'),
-        recipeSlug: recipeSlug || undefined
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    
+    try {
+      const response = await fetch('/api/match', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          ingredients: ingredientsText.split('\n')
+          // Note: Not sending recipeSlug to bypass cache and force fresh search
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setMatches(data);
+    } catch (error) {
+      console.error('Match error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to find matches');
+    } finally {
+      setLoading(false);
     }
-    const data = await response.json();
-    setMatches(data);
-    setLoading(false);
   };
 
   if (error) {
@@ -216,6 +226,9 @@ export default function Match() {
               >
                 Find Matches
               </button>
+              <p className="text-xs text-gray-500 mt-1">
+                This will bypass the cache and perform a fresh search with current ingredients.
+              </p>
             </form>
           </div>
         </div>
