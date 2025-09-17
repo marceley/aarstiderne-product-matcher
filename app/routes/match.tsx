@@ -64,7 +64,7 @@ export default function Match() {
       if (data.ingredients && data.ingredients.length > 0) {
         const ingredientsText = data.ingredients.join('\n');
         setIngredients(ingredientsText);
-        setRecipeUrl(""); // Clear the URL field
+        // Keep the URL in the field instead of clearing it
         
         // Automatically run the matching after successful extraction
         setLoading(true);
