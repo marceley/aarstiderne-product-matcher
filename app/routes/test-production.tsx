@@ -51,7 +51,7 @@ export default function TestProduction() {
       if (data.ingredients && data.ingredients.length > 0) {
         const ingredientsText = data.ingredients.join('\n');
         setIngredients(ingredientsText);
-        setRecipeUrl(""); // Clear the URL field
+        // Keep the URL in the field instead of clearing it
         
         // Automatically run the production matching after successful extraction
         setLoading(true);
@@ -106,8 +106,8 @@ export default function TestProduction() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          ingredients: ingredientsText.split('\n'),
-          recipeSlug: recipeSlug || undefined
+          ingredients: ingredientsText.split('\n')
+          // Note: Not sending recipeSlug to bypass cache and force fresh search
         }),
       });
       
