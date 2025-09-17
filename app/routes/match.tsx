@@ -24,6 +24,7 @@ export default function Match() {
   const [extracting, setExtracting] = useState(false);
   const [recipeSlug, setRecipeSlug] = useState("");
   const [expandedIngredients, setExpandedIngredients] = useState<Set<string>>(new Set());
+  const [showingSuggestions, setShowingSuggestions] = useState<Set<string>>(new Set());
 
   // Function to extract slug from URL
   const extractSlugFromUrl = (url: string): string => {
@@ -46,6 +47,77 @@ export default function Match() {
       newExpanded.add(ingredient);
     }
     setExpandedIngredients(newExpanded);
+  };
+
+  // Function to toggle suggestions for an ingredient
+  const toggleSuggestions = (ingredient: string) => {
+    const newShowing = new Set(showingSuggestions);
+    if (newShowing.has(ingredient)) {
+      newShowing.delete(ingredient);
+    } else {
+      newShowing.add(ingredient);
+    }
+    setShowingSuggestions(newShowing);
+  };
+
+  // Function to generate suggestions for Danish ingredients
+  const generateSuggestions = (ingredient: string): string[] => {
+    const suggestions: string[] = [];
+    const lowerIngredient = ingredient.toLowerCase().trim();
+
+    // Split compound ingredients
+    if (lowerIngredient.includes(' og ')) {
+      const parts = lowerIngredient.split(' og ');
+      if (parts.length === 2) {
+        // Suggest individual ingredients
+        suggestions.push(parts[0].trim());
+        suggestions.push(parts[1].trim());
+        // Also suggest comma-separated version
+        suggestions.push(`${parts[0].trim()}, ${parts[1].trim()}`);
+      }
+    }
+
+    // Remove measurements
+    const measurementPattern = /^\d+\s*(dl|tsk|spsk|g|kg|l|ml|stk|stykker?|både?|fed|fedder?)\s+/i;
+    if (measurementPattern.test(lowerIngredient)) {
+      const withoutMeasurement = lowerIngredient.replace(measurementPattern, '').trim();
+      if (withoutMeasurement) {
+        suggestions.push(withoutMeasurement);
+      }
+    }
+
+    // Remove preparation terms
+    const preparationTerms = ['finthakket', 'groft hakket', 'skåret', 'revet', 'presset', 'hældt', 'tilsat', 'blandet'];
+    for (const term of preparationTerms) {
+      if (lowerIngredient.includes(term)) {
+        const withoutPrep = lowerIngredient.replace(new RegExp(term + '\\s*', 'gi'), '').trim();
+        if (withoutPrep) {
+          suggestions.push(withoutPrep);
+        }
+      }
+    }
+
+    // Remove extra descriptors
+    const descriptors = ['frisk', 'tørret', 'røget', 'marineret', 'kogt', 'stegt'];
+    for (const desc of descriptors) {
+      if (lowerIngredient.includes(desc)) {
+        const withoutDesc = lowerIngredient.replace(new RegExp(desc + '\\s*', 'gi'), '').trim();
+        if (withoutDesc && withoutDesc !== lowerIngredient) {
+          suggestions.push(withoutDesc);
+        }
+      }
+    }
+
+    // Remove parentheses content
+    if (lowerIngredient.includes('(') && lowerIngredient.includes(')')) {
+      const withoutParens = lowerIngredient.replace(/\([^)]*\)/g, '').trim();
+      if (withoutParens) {
+        suggestions.push(withoutParens);
+      }
+    }
+
+    // Capitalize first letter for suggestions
+    return suggestions.map(s => s.charAt(0).toUpperCase() + s.slice(1)).filter((s, i, arr) => arr.indexOf(s) === i);
   };
 
   const handleRecipeExtract = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -300,6 +372,11 @@ export default function Match() {
                     const isExpanded = expandedIngredients.has(match.ingredient);
                     const hasMultipleMatches = match.matches.length > 1;
                     const visibleMatches = isExpanded ? match.matches : match.matches.slice(0, 1);
+                    const topScore = match.matches.length > 0 ? Math.round(match.matches[0].score * 100) : 0;
+                    const needsImprovement = topScore < 95;
+                    const suggestions = needsImprovement ? generateSuggestions(match.ingredient) : [];
+                    const hasSuggestions = suggestions.length > 0;
+                    const isShowingSuggestions = showingSuggestions.has(match.ingredient);
                     
                     return (
                       <div key={match.ingredient} className="border-b border-gray-200 pb-3 last:border-b-0">
@@ -314,6 +391,30 @@ export default function Match() {
                               >
                                 {isExpanded ? 'Show less' : `Show ${match.matches.length - 1} more`}
                               </button>
+                            </div>
+                          )}
+                          {needsImprovement && hasSuggestions && (
+                            <div className="mt-2">
+                              <div className="flex justify-end mb-2">
+                                <button
+                                  onClick={() => toggleSuggestions(match.ingredient)}
+                                  className="text-xs text-orange-600 hover:text-orange-800 font-medium cursor-pointer"
+                                >
+                                  {isShowingSuggestions ? 'Skjul forslag' : 'Foreslå forbedringer'}
+                                </button>
+                              </div>
+                              {isShowingSuggestions && (
+                                <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+                                  <h4 className="text-xs font-semibold text-orange-800 mb-2">Forslag til forbedring:</h4>
+                                  <div className="space-y-1">
+                                    {suggestions.map((suggestion, index) => (
+                                      <div key={index} className="text-sm text-orange-700">
+                                        • {suggestion}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -402,6 +503,11 @@ export default function Match() {
                     const isExpanded = expandedIngredients.has(match.ingredient);
                     const hasMultipleMatches = match.matches.length > 1;
                     const visibleMatches = isExpanded ? match.matches : match.matches.slice(0, 1);
+                    const topScore = match.matches.length > 0 ? Math.round(match.matches[0].score * 100) : 0;
+                    const needsImprovement = topScore < 95;
+                    const suggestions = needsImprovement ? generateSuggestions(match.ingredient) : [];
+                    const hasSuggestions = suggestions.length > 0;
+                    const isShowingSuggestions = showingSuggestions.has(match.ingredient);
                     
                     return (
                       <div key={match.ingredient} className="border-b border-gray-200 pb-3 last:border-b-0">
@@ -416,6 +522,30 @@ export default function Match() {
                               >
                                 {isExpanded ? 'Show less' : `Show ${match.matches.length - 1} more`}
                               </button>
+                            </div>
+                          )}
+                          {needsImprovement && hasSuggestions && (
+                            <div className="mt-2">
+                              <div className="flex justify-end mb-2">
+                                <button
+                                  onClick={() => toggleSuggestions(match.ingredient)}
+                                  className="text-xs text-orange-600 hover:text-orange-800 font-medium cursor-pointer"
+                                >
+                                  {isShowingSuggestions ? 'Skjul forslag' : 'Foreslå forbedringer'}
+                                </button>
+                              </div>
+                              {isShowingSuggestions && (
+                                <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+                                  <h4 className="text-xs font-semibold text-orange-800 mb-2">Forslag til forbedring:</h4>
+                                  <div className="space-y-1">
+                                    {suggestions.map((suggestion, index) => (
+                                      <div key={index} className="text-sm text-orange-700">
+                                        • {suggestion}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
