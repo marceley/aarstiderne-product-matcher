@@ -233,19 +233,19 @@ export default function Match() {
 
   return (
     <div className="w-full px-6 py-4">
-      <h1 className="text-xl font-bold mb-4">Product Matcher</h1>
+      <h1 className="text-xl font-bold mb-4">Produkt Matcher</h1>
       
       <div className="flex gap-6">
         {/* Left Column - Form */}
         <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border">
-            <h2 className="text-base font-semibold mb-3">Ingredients</h2>
+            <h2 className="text-base font-semibold mb-3">Ingredienser</h2>
             
             {/* Recipe URL Form */}
             <div className="mb-6 pb-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold mb-2 text-gray-800">Extract from Recipe URL</h3>
+              <h3 className="text-sm font-semibold mb-2 text-gray-800">Udtræk fra Opskrift URL</h3>
               <p className="text-xs text-gray-600 mb-3">
-                Paste a recipe URL to automatically extract ingredients.
+                Indsæt en opskrift URL for automatisk at udtrække ingredienser.
               </p>
               <form onSubmit={handleRecipeExtract} className="flex gap-2">
                 <input
@@ -259,7 +259,7 @@ export default function Match() {
                       setRecipeSlug(extractedSlug);
                     }
                   }}
-                  placeholder="https://example.com/recipe"
+                  placeholder="https://eksempel.dk/opskrift"
                   className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
                   disabled={extracting}
                 />
@@ -268,7 +268,7 @@ export default function Match() {
                   disabled={extracting || !recipeUrl.trim()}
                   className="bg-green-500 text-white py-2 px-3 rounded-md hover:bg-green-600 transition-colors font-medium text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  {extracting ? 'Extracting...' : 'Extract'}
+                  {extracting ? 'Udtrækker...' : 'Udtræk'}
                 </button>
               </form>
             </div>
@@ -276,7 +276,7 @@ export default function Match() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div>
                 <label htmlFor="recipeSlug" className="block text-sm font-medium mb-1 text-gray-700">
-                  Recipe Slug (used as the key for caching):
+                  Opskrift Slug (bruges som nøgle til caching):
                 </label>
                 <input
                   id="recipeSlug"
@@ -287,17 +287,17 @@ export default function Match() {
                   readOnly
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Slug is automatically extracted from recipe URLs above for caching (1 month TTL).
+                  Slug udtrækkes automatisk fra opskrift URLs ovenfor til caching (1 måned TTL).
                 </p>
               </div>
               <div>
                 <label htmlFor="ingredients" className="block text-sm font-medium mb-1 text-gray-700">
-                  Ingredients (one per line):
+                  Ingredienser (én per linje):
                 </label>
                 <textarea 
                   id="ingredients"
                   name="ingredients" 
-                  placeholder="Enter ingredients, one per line" 
+                  placeholder="Indtast ingredienser, én per linje" 
                   className="w-full h-48 p-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm" 
                   value={ingredients}
                   onChange={(e) => setIngredients(e.target.value)}
@@ -308,10 +308,10 @@ export default function Match() {
                 type="submit" 
                 className="bg-blue-500 text-white py-2 px-3 rounded-md hover:bg-blue-600 transition-colors font-medium text-sm"
               >
-                Find Matches
+                Søg Matches
               </button>
               <p className="text-xs text-gray-500 mt-1">
-                This will bypass the cache and perform a fresh search with current ingredients.
+                Dette vil omgå cachen og udføre en ny søgning med de aktuelle ingredienser.
               </p>
             </form>
           </div>
@@ -320,10 +320,19 @@ export default function Match() {
         {/* Middle Column - High Confidence Results (>=95%) */}
         <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
-            <h2 className="text-base font-semibold mb-3">Excellent Matches (95%+)</h2>
+            <h2 className="text-base font-semibold mb-3">
+              Fremragende Matches (95%+)
+              {matches?.results && (
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  ({matches.results.filter(match => 
+                    match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= 95
+                  ).length} af {matches.results.length} ingredienser)
+                </span>
+              )}
+            </h2>
             {loading ? (
               <div className="flex items-center justify-center flex-1">
-                <div className="text-gray-500 text-sm">Loading matches...</div>
+                <div className="text-gray-500 text-sm">Indlæser matches...</div>
               </div>
             ) : matches?.results && matches.results.length > 0 ? (
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
@@ -389,7 +398,7 @@ export default function Match() {
                                 onClick={() => toggleExpanded(match.ingredient)}
                                 className="text-xs text-gray-600 hover:text-gray-800 font-medium cursor-pointer"
                               >
-                                {isExpanded ? 'Show less' : `Show ${match.matches.length - 1} more`}
+                                {isExpanded ? 'Vis mindre' : `Vis ${match.matches.length - 1} flere`}
                               </button>
                             </div>
                           )}
@@ -425,16 +434,13 @@ export default function Match() {
                   if (highConfidenceResults.length > 0) {
                     return (
                       <>
-                        <h3 className="text-sm font-semibold text-gray-700 mb-3 sticky top-0 z-10 bg-white py-2">
-                          {highConfidenceResults.length} of {matches.results.length} ingredients found excellent matches
-                        </h3>
                         {highConfidenceResults.map(renderMatchSection)}
                       </>
                     );
                   } else {
                     return (
                       <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
-                        No excellent matches (95%+) found
+                        Ingen fremragende matches (95%+) fundet
                       </div>
                     );
                   }
@@ -442,7 +448,7 @@ export default function Match() {
               </div>
             ) : (
               <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
-                Enter ingredients and click "Find Matches" to see results
+                Indtast ingredienser og klik "Søg Matches" for at se resultater
               </div>
             )}
           </div>
@@ -451,10 +457,19 @@ export default function Match() {
         {/* Right Column - Lower Confidence Results (<95%) */}
         <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
-            <h2 className="text-base font-semibold mb-3">Other Matches (&lt;95%)</h2>
+            <h2 className="text-base font-semibold mb-3">
+              Andre Matches (&lt;95%)
+              {matches?.results && (
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  ({matches.results.filter(match => 
+                    match.matches.length === 0 || Math.round(match.matches[0].score * 100) < 95
+                  ).length} af {matches.results.length} ingredienser)
+                </span>
+              )}
+            </h2>
             {loading ? (
               <div className="flex items-center justify-center flex-1">
-                <div className="text-gray-500 text-sm">Loading matches...</div>
+                <div className="text-gray-500 text-sm">Indlæser matches...</div>
               </div>
             ) : matches?.results && matches.results.length > 0 ? (
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
@@ -520,7 +535,7 @@ export default function Match() {
                                 onClick={() => toggleExpanded(match.ingredient)}
                                 className="text-xs text-gray-600 hover:text-gray-800 font-medium cursor-pointer"
                               >
-                                {isExpanded ? 'Show less' : `Show ${match.matches.length - 1} more`}
+                                {isExpanded ? 'Vis mindre' : `Vis ${match.matches.length - 1} flere`}
                               </button>
                             </div>
                           )}
@@ -556,16 +571,13 @@ export default function Match() {
                   if (lowerConfidenceResults.length > 0) {
                     return (
                       <>
-                        <h3 className="text-sm font-semibold text-gray-700 mb-3 sticky top-0 z-10 bg-white py-2">
-                          {lowerConfidenceResults.length} ingredients with lower confidence matches
-                        </h3>
                         {lowerConfidenceResults.map(renderMatchSection)}
                       </>
                     );
                   } else {
                     return (
                       <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
-                        All matches are excellent (95%+)
+                        Alle matches er fremragende (95%+)
                       </div>
                     );
                   }
@@ -573,7 +585,7 @@ export default function Match() {
               </div>
             ) : (
               <div className="flex items-center justify-center flex-1 text-gray-500 text-sm">
-                Enter ingredients and click "Find Matches" to see results
+                Indtast ingredienser og klik "Søg Matches" for at se resultater
               </div>
             )}
           </div>
