@@ -13,6 +13,7 @@ export default function TestProduction() {
   const [recipeUrl, setRecipeUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [recipeSlug, setRecipeSlug] = useState("");
+  const [cacheHit, setCacheHit] = useState<boolean | null>(null);
 
   // Function to extract slug from URL
   const extractSlugFromUrl = (url: string): string => {
@@ -75,6 +76,10 @@ export default function TestProduction() {
             throw new Error(`HTTP error! status: ${matchResponse.status}`);
           }
           
+          // Check cache status from response headers
+          const cacheStatus = matchResponse.headers.get('X-Cache');
+          setCacheHit(cacheStatus === 'HIT');
+          
           const matchData = await matchResponse.json();
           setResults(matchData);
         } catch (matchError) {
@@ -109,14 +114,18 @@ export default function TestProduction() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          ingredients: ingredientsText.split('\n')
-          // Note: Not sending recipeSlug to bypass cache and force fresh search
+          ingredients: ingredientsText.split('\n'),
+          recipeSlug: recipeSlug || undefined
         }),
       });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      // Check cache status from response headers
+      const cacheStatus = response.headers.get('X-Cache');
+      setCacheHit(cacheStatus === 'HIT');
       
       const data = await response.json();
       setResults(data);
@@ -243,9 +252,18 @@ export default function TestProduction() {
                 <div className="p-2 bg-green-50 rounded text-sm mb-3 border-l-4 border-green-300">
                   <div className="flex justify-between items-center">
                     <span>Found {results.ids.length} product matches</span>
-                    <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
-                      Success
-                    </span>
+                    <div className="flex gap-2">
+                      {cacheHit !== null && (
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          cacheHit ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {cacheHit ? 'Cache Hit' : 'Fresh Search'}
+                        </span>
+                      )}
+                      <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
+                        Success
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
@@ -269,9 +287,18 @@ export default function TestProduction() {
                 <div className="p-2 bg-yellow-50 rounded text-sm mb-3 border-l-4 border-yellow-300">
                   <div className="flex justify-between items-center">
                     <span>No product matches found</span>
-                    <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">
-                      No Matches
-                    </span>
+                    <div className="flex gap-2">
+                      {cacheHit !== null && (
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          cacheHit ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {cacheHit ? 'Cache Hit' : 'Fresh Search'}
+                        </span>
+                      )}
+                      <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">
+                        No Matches
+                      </span>
+                    </div>
                   </div>
                 </div>
                 

@@ -232,6 +232,28 @@ export async function action({ request }: ActionFunctionArgs) {
     const totalTime = Date.now() - startTime;
     console.log(`[PROD-MATCH] Total request time: ${totalTime}ms, returning ${ids.length} product IDs`);
     
+    // Cache the results if recipeSlug is provided
+    if (recipeSlug) {
+      try {
+        // Transform results to match the format expected by the cache
+        const cacheResults = details.map(detail => ({
+          ingredient: detail.ingredient,
+          matches: detail.matched && detail.productId ? [{
+            id: detail.productId.toString(),
+            title: null,
+            title_original: null,
+            score: detail.score
+          }] : []
+        }));
+        
+        await setCachedRecipe(recipeSlug, cacheResults);
+        console.log(`[PROD-MATCH] Cached results for recipe ${recipeSlug}`);
+      } catch (cacheError) {
+        console.error(`[PROD-MATCH] Failed to cache results:`, cacheError);
+        // Don't fail the request if caching fails
+      }
+    }
+    
     return new Response(JSON.stringify(response), {
       headers: {
         'Content-Type': 'application/json',
