@@ -34,6 +34,7 @@ export default function Match() {
   const [recipeSlug, setRecipeSlug] = useState("");
   const [expandedIngredients, setExpandedIngredients] = useState<Set<string>>(new Set());
   const [showingSuggestions, setShowingSuggestions] = useState<Set<string>>(new Set());
+  const [cacheHit, setCacheHit] = useState<boolean | null>(null);
 
   // Function to extract slug from URL
   const extractSlugFromUrl = (url: string): string => {
@@ -163,7 +164,7 @@ export default function Match() {
         setLoading(true);
         setError(null);
         try {
-          const matchResponse = await fetch('/api/match', {
+          const matchResponse = await fetch('/api/ingredients/match-dev', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -177,6 +178,10 @@ export default function Match() {
           if (!matchResponse.ok) {
             throw new Error(`HTTP error! status: ${matchResponse.status}`);
           }
+          
+          // Check cache status from response headers
+          const cacheStatus = matchResponse.headers.get('X-Cache');
+          setCacheHit(cacheStatus === 'HIT');
           
           const matchData = await matchResponse.json();
           setMatches(matchData);
@@ -206,7 +211,7 @@ export default function Match() {
     setIngredients(ingredientsText);
     
     try {
-      const response = await fetch('/api/match', {
+      const response = await fetch('/api/ingredients/match-dev', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -220,6 +225,10 @@ export default function Match() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      // Check cache status from response headers
+      const cacheStatus = response.headers.get('X-Cache');
+      setCacheHit(cacheStatus === 'HIT');
       
       const data = await response.json();
       setMatches(data);
@@ -329,16 +338,25 @@ export default function Match() {
         {/* Middle Column - High Confidence Results (>=95%) */}
         <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
-            <h2 className="text-base font-semibold mb-3">
-              Fremragende Matches ({excellentThreshold}%+)
-              {matches?.results && (
-                <span className="text-sm font-normal text-gray-600 ml-2">
-                  ({matches.results.filter(match => 
-                    match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= excellentThreshold
-                  ).length} af {matches.results.length} ingredienser)
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-base font-semibold">
+                Fremragende Matches ({excellentThreshold}%+)
+                {matches?.results && (
+                  <span className="text-sm font-normal text-gray-600 ml-2">
+                    ({matches.results.filter(match => 
+                      match.matches.length > 0 && Math.round(match.matches[0].score * 100) >= excellentThreshold
+                    ).length} af {matches.results.length} ingredienser)
+                  </span>
+                )}
+              </h2>
+              {cacheHit !== null && (
+                <span className={`px-2 py-1 rounded text-xs ${
+                  cacheHit ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                }`}>
+                  {cacheHit ? 'Cache Hit' : 'Fresh Search'}
                 </span>
               )}
-            </h2>
+            </div>
             {loading ? (
               <div className="flex items-center justify-center flex-1">
                 <div className="text-gray-500 text-sm">Indlæser matches...</div>
@@ -466,16 +484,25 @@ export default function Match() {
         {/* Right Column - Lower Confidence Results (<95%) */}
         <div className="flex-1">
           <div className="bg-white p-4 rounded-lg shadow-sm border h-[600px] flex flex-col">
-            <h2 className="text-base font-semibold mb-3">
-              Andre Matches (&lt;{excellentThreshold}%)
-              {matches?.results && (
-                <span className="text-sm font-normal text-gray-600 ml-2">
-                  ({matches.results.filter(match => 
-                    match.matches.length === 0 || Math.round(match.matches[0].score * 100) < excellentThreshold
-                  ).length} af {matches.results.length} ingredienser)
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-base font-semibold">
+                Andre Matches (&lt;{excellentThreshold}%)
+                {matches?.results && (
+                  <span className="text-sm font-normal text-gray-600 ml-2">
+                    ({matches.results.filter(match => 
+                      match.matches.length === 0 || Math.round(match.matches[0].score * 100) < excellentThreshold
+                    ).length} af {matches.results.length} ingredienser)
+                  </span>
+                )}
+              </h2>
+              {cacheHit !== null && (
+                <span className={`px-2 py-1 rounded text-xs ${
+                  cacheHit ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                }`}>
+                  {cacheHit ? 'Cache Hit' : 'Fresh Search'}
                 </span>
               )}
-            </h2>
+            </div>
             {loading ? (
               <div className="flex items-center justify-center flex-1">
                 <div className="text-gray-500 text-sm">Indlæser matches...</div>

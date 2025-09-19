@@ -2,7 +2,7 @@ import { useState } from "react";
 
 type ProductionApiResponse = {
   status: string;
-  ids: number[];
+  products: number[];
 };
 
 export default function TestProduction() {
@@ -13,6 +13,7 @@ export default function TestProduction() {
   const [recipeUrl, setRecipeUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [recipeSlug, setRecipeSlug] = useState("");
+  const [cacheHit, setCacheHit] = useState<boolean | null>(null);
 
   // Function to extract slug from URL
   const extractSlugFromUrl = (url: string): string => {
@@ -60,7 +61,7 @@ export default function TestProduction() {
         setLoading(true);
         setError(null);
         try {
-          const matchResponse = await fetch('/api/match-production', {
+          const matchResponse = await fetch('/api/ingredients/match', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -74,6 +75,10 @@ export default function TestProduction() {
           if (!matchResponse.ok) {
             throw new Error(`HTTP error! status: ${matchResponse.status}`);
           }
+          
+          // Check cache status from response headers
+          const cacheStatus = matchResponse.headers.get('X-Cache');
+          setCacheHit(cacheStatus === 'HIT');
           
           const matchData = await matchResponse.json();
           setResults(matchData);
@@ -103,20 +108,24 @@ export default function TestProduction() {
     setIngredients(ingredientsText);
     
     try {
-      const response = await fetch('/api/match-production', {
+      const response = await fetch('/api/ingredients/match', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          ingredients: ingredientsText.split('\n')
-          // Note: Not sending recipeSlug to bypass cache and force fresh search
+          ingredients: ingredientsText.split('\n'),
+          recipeSlug: recipeSlug || undefined
         }),
       });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      // Check cache status from response headers
+      const cacheStatus = response.headers.get('X-Cache');
+      setCacheHit(cacheStatus === 'HIT');
       
       const data = await response.json();
       setResults(data);
@@ -147,7 +156,7 @@ export default function TestProduction() {
     <div className="max-w-6xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Production API Test</h1>
       <p className="text-sm text-gray-600 mb-6">
-        Test the <code>/api/match-production</code> endpoint that returns only product IDs for production use.
+        Test the <code>/api/ingredients/match</code> endpoint that returns only product IDs for production use.
       </p>
       
       <div className="flex gap-6">
@@ -238,14 +247,23 @@ export default function TestProduction() {
               <div className="flex items-center justify-center flex-1">
                 <div className="text-gray-500 text-sm">Loading production matches...</div>
               </div>
-            ) : results && results.ids.length > 0 ? (
+            ) : results && results.products.length > 0 ? (
               <div className="flex-1 overflow-y-auto">
                 <div className="p-2 bg-green-50 rounded text-sm mb-3 border-l-4 border-green-300">
                   <div className="flex justify-between items-center">
-                    <span>Found {results.ids.length} product matches</span>
-                    <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
-                      Success
-                    </span>
+                    <span>Found {results.products.length} product matches</span>
+                    <div className="flex gap-2">
+                      {cacheHit !== null && (
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          cacheHit ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {cacheHit ? 'Cache Hit' : 'Fresh Search'}
+                        </span>
+                      )}
+                      <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
+                        Success
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
@@ -253,7 +271,7 @@ export default function TestProduction() {
                 <div className="p-3 bg-gray-100 rounded text-xs">
                   <strong>Product IDs for Production:</strong>
                   <div className="mt-1 text-xs font-mono">
-                    [{results.ids.join(', ')}]
+                    [{results.products.join(', ')}]
                   </div>
                 </div>
                 
@@ -264,14 +282,23 @@ export default function TestProduction() {
                   </pre>
                 </div>
               </div>
-            ) : results && results.ids.length === 0 ? (
+            ) : results && results.products.length === 0 ? (
               <div className="flex-1 overflow-y-auto">
                 <div className="p-2 bg-yellow-50 rounded text-sm mb-3 border-l-4 border-yellow-300">
                   <div className="flex justify-between items-center">
                     <span>No product matches found</span>
-                    <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">
-                      No Matches
-                    </span>
+                    <div className="flex gap-2">
+                      {cacheHit !== null && (
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          cacheHit ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {cacheHit ? 'Cache Hit' : 'Fresh Search'}
+                        </span>
+                      )}
+                      <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">
+                        No Matches
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
