@@ -29,6 +29,7 @@ Tiny app with multiple endpoints:
 **Required variables:**
 - `OPENAI_API_KEY`: Your OpenAI API key for embeddings
 - `DATABASE_URL` or individual database variables: `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`
+- `BASIC_API_KEY`: API key for endpoint authentication (required for all API endpoints)
 
 **Optional variables:**
 - `EXCELLENT_MATCH_THRESHOLD`: Matching threshold percentage (default: 95)
@@ -63,9 +64,11 @@ This will create a `.env.local` file with all your Vercel environment variables 
 - Manual scrape trigger:
 
 ```bash
-curl -X POST https://aarstiderne-product-matcher.vercel.app/api/scrape
+curl -X POST https://aarstiderne-product-matcher.vercel.app/api/scrape \
+  -H 'X-Api-Key: YOUR_API_KEY'
 # or GET (compatible with Vercel Cron)
-curl https://aarstiderne-product-matcher.vercel.app/api/scrape
+curl https://aarstiderne-product-matcher.vercel.app/api/scrape \
+  -H 'X-Api-Key: YOUR_API_KEY'
 ```
 
 ### API Examples
@@ -74,6 +77,7 @@ curl https://aarstiderne-product-matcher.vercel.app/api/scrape
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/ingredients/match \
   -H 'Content-Type: application/json' \
+  -H 'X-Api-Key: YOUR_API_KEY' \
   -d '{"ingredients":["tomato","basil"]}'
 ```
 
@@ -81,6 +85,7 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/ingredients/matc
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/ingredients/match-dev \
   -H 'Content-Type: application/json' \
+  -H 'X-Api-Key: YOUR_API_KEY' \
   -d '{"ingredients":["tomato","basil"]}'
 ```
 
@@ -109,6 +114,7 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/ingredients/matc
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/extract-recipe \
   -H 'Content-Type: application/json' \
+  -H 'X-Api-Key: YOUR_API_KEY' \
   -d '{"url":"https://example.com/recipe"}'
 ```
 
