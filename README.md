@@ -31,6 +31,7 @@ Tiny app with multiple endpoints:
 - `DATABASE_URL` or individual database variables: `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`
 
 **Optional variables:**
+- `API_KEY`: Authentication key for API endpoints (required for production)
 - `EXCELLENT_MATCH_THRESHOLD`: Matching threshold percentage (default: 95)
 - `CACHE_TTL_MONTHS`: Cache expiration in months (default: 1)
 - `SCRAPE_FEED_URL`: Product feed URL
@@ -74,6 +75,7 @@ curl https://aarstiderne-product-matcher.vercel.app/api/scrape
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
   -d '{"ingredients":["tomato","basil"]}'
 ```
 
@@ -81,6 +83,7 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match \
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match-production \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
   -d '{"ingredients":["tomato","basil"]}'
 ```
 
@@ -109,7 +112,16 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match-production
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/extract-recipe \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
   -d '{"url":"https://example.com/recipe"}'
+```
+
+**Alternative authentication (X-API-Key header):**
+```bash
+curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match-production \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Key: YOUR_API_KEY' \
+  -d '{"ingredients":["tomato","basil"]}'
 ```
 
 **Check database status:**

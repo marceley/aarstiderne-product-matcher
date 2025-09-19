@@ -19,12 +19,13 @@ type MatchApiResponse = {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   return {
-    excellentThreshold: parseInt(process.env.EXCELLENT_MATCH_THRESHOLD || "95", 10)
+    excellentThreshold: parseInt(process.env.EXCELLENT_MATCH_THRESHOLD || "95", 10),
+    apiKey: process.env.API_KEY || null
   };
 }
 
 export default function Match() {
-  const { excellentThreshold } = useLoaderData<typeof loader>();
+  const { excellentThreshold, apiKey } = useLoaderData<typeof loader>();
   const [matches, setMatches] = useState<MatchApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -141,11 +142,17 @@ export default function Match() {
     
     setExtracting(true);
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+      
       const response = await fetch('/api/extract-recipe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ url: recipeUrl }),
       });
       
@@ -206,11 +213,17 @@ export default function Match() {
     setIngredients(ingredientsText);
     
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+      
       const response = await fetch('/api/match', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ 
           ingredients: ingredientsText.split('\n')
           // Note: Not sending recipeSlug to bypass cache and force fresh search

@@ -1,10 +1,16 @@
 import type { ActionFunctionArgs } from "react-router";
+import { validateApiKey, createAuthErrorResponse } from "../utils/auth";
 import pkg from "he";
 const { decode } = pkg;
 
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
+  }
+  
+  // Check API key authentication
+  if (!validateApiKey(request)) {
+    return createAuthErrorResponse();
   }
 
   try {
