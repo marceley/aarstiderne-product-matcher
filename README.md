@@ -84,6 +84,46 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match-production
   -d '{"ingredients":["tomato","basil"]}'
 ```
 
+**Production API Response:**
+```json
+{
+  "status": "success",
+  "totalIngredients": 2,
+  "matchedIngredients": 2,
+  "unmatchedIngredients": 0,
+  "threshold": 95,
+  "cacheHit": false,
+  "productIds": [123, 456],
+  "details": [
+    {
+      "ingredient": "tomato",
+      "matched": true,
+      "productId": 123,
+      "score": 0.95
+    },
+    {
+      "ingredient": "basil",
+      "matched": true,
+      "productId": 456,
+      "score": 0.87
+    }
+  ]
+}
+```
+
+**Error Response:**
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "Ingredients array is required and must not be empty",
+    "details": "The request body must contain a non-empty 'ingredients' array"
+  },
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
 **Extract recipe from URL:**
 ```bash
 curl -X POST https://aarstiderne-product-matcher.vercel.app/api/extract-recipe \
