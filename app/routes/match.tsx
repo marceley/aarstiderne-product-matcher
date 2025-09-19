@@ -206,7 +206,7 @@ export default function Match() {
     setIngredients(ingredientsText);
     
     try {
-      const response = await fetch('/api/match', {
+      const response = await fetch('/api/match-dev', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
