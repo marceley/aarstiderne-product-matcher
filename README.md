@@ -88,26 +88,7 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match-production
 ```json
 {
   "status": "success",
-  "totalIngredients": 2,
-  "matchedIngredients": 2,
-  "unmatchedIngredients": 0,
-  "threshold": 95,
-  "cacheHit": false,
-  "productIds": [123, 456],
-  "details": [
-    {
-      "ingredient": "tomato",
-      "matched": true,
-      "productId": 123,
-      "score": 0.95
-    },
-    {
-      "ingredient": "basil",
-      "matched": true,
-      "productId": 456,
-      "score": 0.87
-    }
-  ]
+  "ids": [123, 456]
 }
 ```
 

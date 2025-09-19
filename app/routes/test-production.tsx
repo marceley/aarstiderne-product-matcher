@@ -2,18 +2,7 @@ import { useState } from "react";
 
 type ProductionApiResponse = {
   status: string;
-  totalIngredients: number;
-  matchedIngredients: number;
-  unmatchedIngredients: number;
-  threshold: number;
-  cacheHit: boolean;
-  productIds: number[];
-  details: {
-    ingredient: string;
-    matched: boolean;
-    productId: number | null;
-    score: number;
-  }[];
+  ids: number[];
 };
 
 export default function TestProduction() {
@@ -249,49 +238,22 @@ export default function TestProduction() {
               <div className="flex items-center justify-center flex-1">
                 <div className="text-gray-500 text-sm">Loading production matches...</div>
               </div>
-            ) : results && results.productIds.length > 0 ? (
+            ) : results && results.ids.length > 0 ? (
               <div className="flex-1 overflow-y-auto">
-                <div className="p-2 bg-gray-50 rounded text-sm mb-3">
+                <div className="p-2 bg-green-50 rounded text-sm mb-3 border-l-4 border-green-300">
                   <div className="flex justify-between items-center">
-                    <span>Found {results.matchedIngredients} of {results.totalIngredients} ingredients</span>
-                    <span className={`px-2 py-1 rounded text-xs ${results.cacheHit ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {results.cacheHit ? 'Cache Hit' : 'Fresh Search'}
+                    <span>Found {results.ids.length} product matches</span>
+                    <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
+                      Success
                     </span>
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    Threshold: {results.threshold}% | Matched: {results.matchedIngredients} | Unmatched: {results.unmatchedIngredients}
                   </div>
                 </div>
                 
-                <div className="space-y-2 mb-4">
-                  {results.details.map((detail, index) => (
-                    <div key={index} className={`flex items-center justify-between p-2 rounded-md border-l-4 ${
-                      detail.matched 
-                        ? 'bg-green-50 border-green-300' 
-                        : 'bg-red-50 border-red-300'
-                    }`}>
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900 text-sm">{detail.ingredient}</div>
-                        <div className="text-xs text-gray-500">
-                          {detail.matched 
-                            ? `Product ID: ${detail.productId} | Score: ${Math.round(detail.score * 100)}%`
-                            : `No match found | Score: ${Math.round(detail.score * 100)}%`
-                          }
-                        </div>
-                      </div>
-                      <div className={`text-xs font-medium ${
-                        detail.matched ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {detail.matched ? '✓' : '✗'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
                 
                 <div className="p-3 bg-gray-100 rounded text-xs">
                   <strong>Product IDs for Production:</strong>
                   <div className="mt-1 text-xs font-mono">
-                    [{results.productIds.join(', ')}]
+                    [{results.ids.join(', ')}]
                   </div>
                 </div>
                 
@@ -302,34 +264,15 @@ export default function TestProduction() {
                   </pre>
                 </div>
               </div>
-            ) : results && results.productIds.length === 0 ? (
+            ) : results && results.ids.length === 0 ? (
               <div className="flex-1 overflow-y-auto">
                 <div className="p-2 bg-yellow-50 rounded text-sm mb-3 border-l-4 border-yellow-300">
                   <div className="flex justify-between items-center">
-                    <span>No matches found for {results.totalIngredients} ingredients</span>
-                    <span className={`px-2 py-1 rounded text-xs ${results.cacheHit ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {results.cacheHit ? 'Cache Hit' : 'Fresh Search'}
+                    <span>No product matches found</span>
+                    <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">
+                      No Matches
                     </span>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    Threshold: {results.threshold}% | All ingredients below threshold
-                  </div>
-                </div>
-                
-                <div className="space-y-2 mb-4">
-                  {results.details.map((detail, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded-md border-l-4 border-red-300">
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900 text-sm">{detail.ingredient}</div>
-                        <div className="text-xs text-gray-500">
-                          No match found | Score: {Math.round(detail.score * 100)}%
-                        </div>
-                      </div>
-                      <div className="text-xs font-medium text-red-700">
-                        ✗
-                      </div>
-                    </div>
-                  ))}
                 </div>
                 
                 <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
