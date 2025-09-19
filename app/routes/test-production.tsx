@@ -2,7 +2,7 @@ import { useState } from "react";
 
 type ProductionApiResponse = {
   status: string;
-  ids: number[];
+  products: number[];
 };
 
 export default function TestProduction() {
@@ -247,11 +247,11 @@ export default function TestProduction() {
               <div className="flex items-center justify-center flex-1">
                 <div className="text-gray-500 text-sm">Loading production matches...</div>
               </div>
-            ) : results && results.ids.length > 0 ? (
+            ) : results && results.products.length > 0 ? (
               <div className="flex-1 overflow-y-auto">
                 <div className="p-2 bg-green-50 rounded text-sm mb-3 border-l-4 border-green-300">
                   <div className="flex justify-between items-center">
-                    <span>Found {results.ids.length} product matches</span>
+                    <span>Found {results.products.length} product matches</span>
                     <div className="flex gap-2">
                       {cacheHit !== null && (
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -271,7 +271,7 @@ export default function TestProduction() {
                 <div className="p-3 bg-gray-100 rounded text-xs">
                   <strong>Product IDs for Production:</strong>
                   <div className="mt-1 text-xs font-mono">
-                    [{results.ids.join(', ')}]
+                    [{results.products.join(', ')}]
                   </div>
                 </div>
                 
@@ -282,7 +282,7 @@ export default function TestProduction() {
                   </pre>
                 </div>
               </div>
-            ) : results && results.ids.length === 0 ? (
+            ) : results && results.products.length === 0 ? (
               <div className="flex-1 overflow-y-auto">
                 <div className="p-2 bg-yellow-50 rounded text-sm mb-3 border-l-4 border-yellow-300">
                   <div className="flex justify-between items-center">

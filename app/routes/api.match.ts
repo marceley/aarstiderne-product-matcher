@@ -90,7 +90,7 @@ export async function action({ request }: ActionFunctionArgs) {
       
       const response = {
         status: "success",
-        ids
+        products: ids
       };
       
       return new Response(JSON.stringify(response), {
@@ -226,7 +226,7 @@ export async function action({ request }: ActionFunctionArgs) {
     
     const response = {
       status: "success",
-      ids
+      products: ids
     };
     
     const totalTime = Date.now() - startTime;

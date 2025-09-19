@@ -88,7 +88,7 @@ curl -X POST https://aarstiderne-product-matcher.vercel.app/api/ingredients/matc
 ```json
 {
   "status": "success",
-  "ids": [123, 456]
+  "products": [123, 456]
 }
 ```
 
