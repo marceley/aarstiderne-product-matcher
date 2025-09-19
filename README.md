@@ -3,8 +3,8 @@
 Tiny app with multiple endpoints:
 
 - **POST `/api/scrape`**: Fetches daily product feed, embeds titles, upserts to Postgres with pgvector
-- **POST `/api/match`**: Production endpoint returning only product IDs for matched ingredients above threshold
-- **POST `/api/match-dev`**: Development endpoint returning best-matching products with scores
+- **POST `/api/ingredients/match`**: Production endpoint returning only product IDs for matched ingredients above threshold
+- **POST `/api/ingredients/match-dev`**: Development endpoint returning best-matching products with scores
 - **POST `/api/extract-recipe`**: Extracts ingredients from recipe URLs (Danish recipe sites)
 - **GET `/api/products`**: Returns sample products from database
 
@@ -72,14 +72,14 @@ curl https://aarstiderne-product-matcher.vercel.app/api/scrape
 
 **Production matching (returns only product IDs):**
 ```bash
-curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match \
+curl -X POST https://aarstiderne-product-matcher.vercel.app/api/ingredients/match \
   -H 'Content-Type: application/json' \
   -d '{"ingredients":["tomato","basil"]}'
 ```
 
 **Development matching (returns detailed results with scores):**
 ```bash
-curl -X POST https://aarstiderne-product-matcher.vercel.app/api/match-dev \
+curl -X POST https://aarstiderne-product-matcher.vercel.app/api/ingredients/match-dev \
   -H 'Content-Type: application/json' \
   -d '{"ingredients":["tomato","basil"]}'
 ```

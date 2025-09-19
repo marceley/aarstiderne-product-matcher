@@ -61,7 +61,7 @@ export default function TestProduction() {
         setLoading(true);
         setError(null);
         try {
-          const matchResponse = await fetch('/api/match', {
+          const matchResponse = await fetch('/api/ingredients/match', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ export default function TestProduction() {
     setIngredients(ingredientsText);
     
     try {
-      const response = await fetch('/api/match', {
+      const response = await fetch('/api/ingredients/match', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +156,7 @@ export default function TestProduction() {
     <div className="max-w-6xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Production API Test</h1>
       <p className="text-sm text-gray-600 mb-6">
-        Test the <code>/api/match</code> endpoint that returns only product IDs for production use.
+        Test the <code>/api/ingredients/match</code> endpoint that returns only product IDs for production use.
       </p>
       
       <div className="flex gap-6">

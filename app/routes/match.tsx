@@ -163,7 +163,7 @@ export default function Match() {
         setLoading(true);
         setError(null);
         try {
-          const matchResponse = await fetch('/api/match', {
+          const matchResponse = await fetch('/api/ingredients/match-dev', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ export default function Match() {
     setIngredients(ingredientsText);
     
     try {
-      const response = await fetch('/api/match-dev', {
+      const response = await fetch('/api/ingredients/match-dev', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
