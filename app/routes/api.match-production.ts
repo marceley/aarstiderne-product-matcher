@@ -84,19 +84,13 @@ export async function action({ request }: ActionFunctionArgs) {
         };
       });
       
-      const productIds = details
+      const ids = details
         .filter(detail => detail.matched && detail.productId && !isNaN(detail.productId))
         .map(detail => detail.productId);
       
       const response = {
         status: "success",
-        totalIngredients: ingredients.length,
-        matchedIngredients: productIds.length,
-        unmatchedIngredients: ingredients.length - productIds.length,
-        threshold: thresholdPercent,
-        cacheHit: true,
-        productIds,
-        details
+        ids
       };
       
       return new Response(JSON.stringify(response), {
@@ -224,7 +218,7 @@ export async function action({ request }: ActionFunctionArgs) {
       };
     });
     
-    const productIds = details
+    const ids = details
       .filter(detail => detail.matched && detail.productId && !isNaN(detail.productId))
       .map(detail => detail.productId);
     
@@ -232,17 +226,11 @@ export async function action({ request }: ActionFunctionArgs) {
     
     const response = {
       status: "success",
-      totalIngredients: ingredients.length,
-      matchedIngredients: productIds.length,
-      unmatchedIngredients: ingredients.length - productIds.length,
-      threshold: thresholdPercent,
-      cacheHit: false,
-      productIds,
-      details
+      ids
     };
     
     const totalTime = Date.now() - startTime;
-    console.log(`[PROD-MATCH] Total request time: ${totalTime}ms, returning ${productIds.length} product IDs`);
+    console.log(`[PROD-MATCH] Total request time: ${totalTime}ms, returning ${ids.length} product IDs`);
     
     return new Response(JSON.stringify(response), {
       headers: {
