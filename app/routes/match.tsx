@@ -19,12 +19,13 @@ type MatchApiResponse = {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   return {
-    excellentThreshold: parseInt(process.env.EXCELLENT_MATCH_THRESHOLD || "95", 10)
+    excellentThreshold: parseInt(process.env.EXCELLENT_MATCH_THRESHOLD || "95", 10),
+    apiKey: process.env.BASIC_API_KEY || null
   };
 }
 
 export default function Match() {
-  const { excellentThreshold } = useLoaderData<typeof loader>();
+  const { excellentThreshold, apiKey } = useLoaderData<typeof loader>();
   const [matches, setMatches] = useState<MatchApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,11 +143,20 @@ export default function Match() {
     
     setExtracting(true);
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (apiKey) {
+        headers['X-Api-Key'] = apiKey;
+        console.log('[FRONTEND-DEBUG] Using API key for extract-recipe:', apiKey);
+      } else {
+        console.log('[FRONTEND-DEBUG] No API key available for extract-recipe');
+      }
+      
       const response = await fetch('/api/extract-recipe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ url: recipeUrl }),
       });
       
@@ -164,11 +174,20 @@ export default function Match() {
         setLoading(true);
         setError(null);
         try {
+          const matchHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          
+          if (apiKey) {
+            matchHeaders['X-Api-Key'] = apiKey;
+            console.log('[FRONTEND-DEBUG] Using API key for match-dev:', apiKey);
+          } else {
+            console.log('[FRONTEND-DEBUG] No API key available for match-dev');
+          }
+          
           const matchResponse = await fetch('/api/ingredients/match-dev', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: matchHeaders,
             body: JSON.stringify({ 
               ingredients: data.ingredients,
               recipeSlug: recipeSlug || extractedSlug || undefined
@@ -211,11 +230,20 @@ export default function Match() {
     setIngredients(ingredientsText);
     
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (apiKey) {
+        headers['X-Api-Key'] = apiKey;
+        console.log('[FRONTEND-DEBUG] Using API key for match-dev (submit):', apiKey);
+      } else {
+        console.log('[FRONTEND-DEBUG] No API key available for match-dev (submit)');
+      }
+      
       const response = await fetch('/api/ingredients/match-dev', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ 
           ingredients: ingredientsText.split('\n')
           // Note: Not sending recipeSlug to bypass cache and force fresh search

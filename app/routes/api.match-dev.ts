@@ -4,6 +4,24 @@ import { getEmbeddings } from "../utils/embeddings";
 import { getCachedRecipe, setCachedRecipe } from "../utils/recipe-cache";
 
 export async function action({ request }: ActionFunctionArgs) {
+  // Check API key
+  const apiKey = request.headers.get('X-Api-Key');
+  const expectedKey = process.env.BASIC_API_KEY;
+  
+  if (!expectedKey) {
+    return new Response(JSON.stringify({ error: "API key not configured" }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  
+  if (!apiKey || apiKey !== expectedKey) {
+    return new Response(JSON.stringify({ error: "Invalid API key" }), { 
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }

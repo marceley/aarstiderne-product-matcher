@@ -1,4 +1,12 @@
 import { useState } from "react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  return {
+    apiKey: process.env.BASIC_API_KEY || null
+  };
+}
 
 type ProductionApiResponse = {
   status: string;
@@ -6,6 +14,7 @@ type ProductionApiResponse = {
 };
 
 export default function TestProduction() {
+  const { apiKey } = useLoaderData<typeof loader>();
   const [results, setResults] = useState<ProductionApiResponse>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,11 +48,17 @@ export default function TestProduction() {
     
     setExtracting(true);
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (apiKey) {
+        headers['X-Api-Key'] = apiKey;
+      }
+      
       const response = await fetch('/api/extract-recipe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ url: recipeUrl }),
       });
       
@@ -61,11 +76,17 @@ export default function TestProduction() {
         setLoading(true);
         setError(null);
         try {
+          const matchHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          
+          if (apiKey) {
+            matchHeaders['X-Api-Key'] = apiKey;
+          }
+          
           const matchResponse = await fetch('/api/ingredients/match', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: matchHeaders,
             body: JSON.stringify({ 
               ingredients: data.ingredients,
               recipeSlug: recipeSlug || extractedSlug || undefined
@@ -108,11 +129,17 @@ export default function TestProduction() {
     setIngredients(ingredientsText);
     
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (apiKey) {
+        headers['X-Api-Key'] = apiKey;
+      }
+      
       const response = await fetch('/api/ingredients/match', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ 
           ingredients: ingredientsText.split('\n'),
           recipeSlug: recipeSlug || undefined
