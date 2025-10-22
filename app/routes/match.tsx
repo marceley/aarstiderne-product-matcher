@@ -149,6 +149,9 @@ export default function Match() {
       
       if (apiKey) {
         headers['X-Api-Key'] = apiKey;
+        console.log('[FRONTEND-DEBUG] Using API key for extract-recipe:', apiKey);
+      } else {
+        console.log('[FRONTEND-DEBUG] No API key available for extract-recipe');
       }
       
       const response = await fetch('/api/extract-recipe', {
@@ -177,6 +180,9 @@ export default function Match() {
           
           if (apiKey) {
             matchHeaders['X-Api-Key'] = apiKey;
+            console.log('[FRONTEND-DEBUG] Using API key for match-dev:', apiKey);
+          } else {
+            console.log('[FRONTEND-DEBUG] No API key available for match-dev');
           }
           
           const matchResponse = await fetch('/api/ingredients/match-dev', {
@@ -230,6 +236,9 @@ export default function Match() {
       
       if (apiKey) {
         headers['X-Api-Key'] = apiKey;
+        console.log('[FRONTEND-DEBUG] Using API key for match-dev (submit):', apiKey);
+      } else {
+        console.log('[FRONTEND-DEBUG] No API key available for match-dev (submit)');
       }
       
       const response = await fetch('/api/ingredients/match-dev', {

@@ -1,0 +1,8 @@
+[
+    {"name":"Orion","abbr":"Ori","segments":[["betelgeuse","bellatrix"],["bellatrix","mintaka"],["mintaka","alnilam"],["alnilam","alnitak"],["alnitak","saiph"],["saiph","rigel"],["rigel","alnitak"]]},
+    {"name":"Ursa Major","abbr":"UMa","segments":[["dubhe","merak"],["merak","phecda"],["phecda","megrez"],["megrez","alioth"],["alioth","mizar"],["mizar","alkaid"]]},
+    {"name":"Cassiopeia","abbr":"Cas","segments":[["caph","schedar"],["schedar","tsih"],["tsih","rachbah"],["rachbah","segin"]]},
+    {"name":"Lyra","abbr":"Lyr","segments":[["vega",{"ra":18.9,"dec":36.9}]]},
+    {"name":"Cygnus","abbr":"Cyg","segments":[["deneb",{"ra":20.37,"dec":40.26}],[{"ra":20.37,"dec":40.26},{"ra":19.61,"dec":30.52}]]},
+    {"name":"Aquila","abbr":"Aql","segments":[["altair",{"ra":19.77,"dec":11.8}]]}
+  ]
