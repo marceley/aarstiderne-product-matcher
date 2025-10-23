@@ -182,7 +182,7 @@ export default function StarfieldCanvas({
       // Convert scroll deltas to rotation velocity
       const scrollSensitivity = 0.003;
       scrollVelocityRef.current.y += deltaX * scrollSensitivity;
-      scrollVelocityRef.current.x += deltaY * scrollSensitivity;
+      scrollVelocityRef.current.x += -deltaY * scrollSensitivity;
 
       // Limit maximum velocity
       const maxVelocity = 0.02;
@@ -206,7 +206,7 @@ export default function StarfieldCanvas({
         if ((touch.target as any).lastTouchX !== undefined) {
           const touchSensitivity = 0.005;
           scrollVelocityRef.current.y += deltaX * touchSensitivity;
-          scrollVelocityRef.current.x += deltaY * touchSensitivity;
+          scrollVelocityRef.current.x += -deltaY * touchSensitivity;
         }
 
         (touch.target as any).lastTouchX = touch.clientX;
