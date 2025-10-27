@@ -6,3 +6,4 @@
 /build/
 .vercel
 .env*.local
+.env
